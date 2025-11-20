@@ -261,7 +261,7 @@ jobs:
             KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
 
         else
-            make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \ 
+            make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
             KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
 
         fi
