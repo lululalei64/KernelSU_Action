@@ -265,6 +265,16 @@ jobs:
             KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
 
         fi
+        
+    - name: Show kernel build output
+      run: |
+        echo "=== Kernel build output files ==="
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/out
+        echo "Current path: $(pwd)"
+        echo "--- arch/${{ env.ARCH }}/boot ---"
+        ls -al arch/${{ env.ARCH }}/boot || echo "boot folder not found"
+        echo "--- modules (.ko) ---"
+        find . -name "*.ko" | sed 's/^/  /' || true
 
     - name: Check a kernel output files
       run: |
