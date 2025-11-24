@@ -249,6 +249,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         export LOCALVERSION=""
+        export CONFIG_LOCALVERSION_AUTO=n
         export KBUILD_BUILD_USER=android
         export KBUILD_BUILD_HOST=aosp
         export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/bin:$PATH
