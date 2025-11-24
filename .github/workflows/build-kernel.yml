@@ -182,12 +182,12 @@ jobs:
     - name: Download kernel source
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        git clone --recursive ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel --depth=1
-        if [[ ${{ env.ADD_LOCALVERSION_TO_FILENAME }} == 'true' ]]; then
-          echo "LOCALVERSION=$(cat android-kernel/localversion)" >> $GITHUB_ENV
-        else
-          echo "LOCALVERSION=" >> $GITHUB_ENV
-        fi
+        wget -O kernel.zip "${{ env.KERNEL_SOURCE }}/archive/refs/heads/${{ env.KERNEL_SOURCE_BRANCH }}.zip"
+        unzip kernel.zip
+        SRC_DIR=$(find . -maxdepth 1 -type d ! -name "." | grep -v "kernel_workspace" | head -n 1)
+        mkdir android-kernel
+        mv "$SRC_DIR"/* android-kernel/
+        rm -rf "$SRC_DIR"
 
     - name: Download source boot image
       if: env.BUILD_BOOT_IMG == 'true'
