@@ -11,11 +11,13 @@ patch_files=(
     fs/read_write.c
     fs/stat.c
     drivers/input/input.c
+    drivers/kernelsu/ksu.c
+    drivers/kernelsu/selinux/selinux_hook.c
 )
 
 for i in "${patch_files[@]}"; do
 
-    if grep -q "ksu" "$i"; then
+    if [[ "$i" != drivers/kernelsu/* && $(grep -q "ksu" "$i") ]]; then
         echo "Warning: $i contains KernelSU"
         continue
     fi
@@ -70,6 +72,15 @@ for i in "${patch_files[@]}"; do
     drivers/input/input.c)
         sed -i '/static void input_handle_event/i\#ifdef CONFIG_KSU\nextern bool ksu_input_hook __read_mostly;\nextern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);\n#endif\n' drivers/input/input.c
         sed -i '/int disposition = input_get_disposition(dev, type, code, &value);/a\	#ifdef CONFIG_KSU\n	if (unlikely(ksu_input_hook))\n		ksu_handle_input_handle_event(&type, &code, &value);\n	#endif' drivers/input/input.c
+        ;;
+
+    drivers/kernelsu/ksu.c)
+        sed -i 's/MODULE_IMPORT_NS(/#if defined(MODULE_IMPORT_NS)\nMODULE_IMPORT_NS(/' drivers/kernelsu/ksu.c
+        sed -i 's/);$/);\n#endif/' drivers/kernelsu/ksu.c
+        ;;
+
+    drivers/kernelsu/selinux/selinux_hook.c)
+        sed -i '/#include <linux\/security.h>/a #ifndef SECURITY_H\n#define SECURITY_H\n#endif' drivers/kernelsu/selinux/selinux_hook.c
         ;;
     esac
 
