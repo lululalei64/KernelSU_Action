@@ -11,12 +11,12 @@ patch_files=(
     fs/read_write.c
     fs/stat.c
     drivers/input/input.c
-    drivers/kernelsu/ksu.c
+    kernelsu/ksu.c
 )
 
 for i in "${patch_files[@]}"; do
 
-    if [[ "$i" != drivers/kernelsu/* ]] && grep -q "ksu" "$i"; then
+    if [[ "$i" != kernelsu/* ]] && grep -q "ksu" "$i"; then
         echo "Warning: $i contains KernelSU"
         continue
     fi
@@ -73,7 +73,7 @@ for i in "${patch_files[@]}"; do
         sed -i '/int disposition = input_get_disposition(dev, type, code, &value);/a\	#ifdef CONFIG_KSU\n	if (unlikely(ksu_input_hook))\n		ksu_handle_input_handle_event(&type, &code, &value);\n	#endif' drivers/input/input.c
         ;;
 
-    drivers/kernelsu/ksu.c)
+    kernelsu/ksu.c)
         sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
         ;;
     esac
