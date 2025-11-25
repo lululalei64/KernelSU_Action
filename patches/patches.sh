@@ -75,13 +75,13 @@ for i in "${patch_files[@]}"; do
         ;;
 
     drivers/kernelsu/ksu.c)
-        echo "[PATCH] Patching KernelSU/kernel/ksu.c"
+        echo "[PATCH] Patching drivers/kernelsu/ksu.c"
         sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
         ;;
 
     drivers/kernelsu/selinux/selinux.c)
         echo "[PATCH] Patching drivers/kernelsu/selinux/selinux.c"
-        sed -i 's/static inline u32 current_sid(void)/#ifndef __LINUX_SELINUX_SECUR_H__\nstatic inline u32 current_sid(void)/' drivers/kernelsu/selinux/selinux.c
+        sed -i 's/static inline u32 current_sid(void)/#if !defined(current_sid)\nstatic inline u32 current_sid(void)/' drivers/kernelsu/selinux/selinux.c
         sed -i 's/return current_security()->sid;/return current_security()->sid;\n#endif/' drivers/kernelsu/selinux/selinux.c
         ;;
     esac
