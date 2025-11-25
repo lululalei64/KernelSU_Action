@@ -248,6 +248,7 @@ jobs:
     - name: Build kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        rm -f localversion-st
         export LOCALVERSION=""
         export CONFIG_LOCALVERSION_AUTO=n
         export KBUILD_BUILD_USER=android
