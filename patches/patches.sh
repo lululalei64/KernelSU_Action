@@ -12,7 +12,6 @@ patch_files=(
     fs/stat.c
     drivers/input/input.c
     drivers/kernelsu/ksu.c
-    drivers/kernelsu/selinux/selinux_hook.c
 )
 
 for i in "${patch_files[@]}"; do
@@ -77,10 +76,6 @@ for i in "${patch_files[@]}"; do
     drivers/kernelsu/ksu.c)
         sed -i 's/MODULE_IMPORT_NS(/#if defined(MODULE_IMPORT_NS)\nMODULE_IMPORT_NS(/' drivers/kernelsu/ksu.c
         sed -i 's/);$/);\n#endif/' drivers/kernelsu/ksu.c
-        ;;
-
-    drivers/kernelsu/selinux/selinux_hook.c)
-        sed -i '/#include <linux\/security.h>/a #ifndef SECURITY_H\n#define SECURITY_H\n#endif' drivers/kernelsu/selinux/selinux_hook.c
         ;;
     esac
 
