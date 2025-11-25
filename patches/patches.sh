@@ -81,7 +81,7 @@ for i in "${patch_files[@]}"; do
 
     drivers/kernelsu/selinux/selinux.c)
         echo "[PATCH] Patching drivers/kernelsu/selinux/selinux.c"
-        sed -i 's/!defined(KSU_COMPAT_HAS_CURRENT_SID)/1/' drivers/kernelsu/selinux/selinux.c
+        sed -i '/static inline u32 current_sid(void)/,/^}/ s/^/\/\/ /' drivers/kernelsu/selinux/selinux.c
         ;;
     esac
 
