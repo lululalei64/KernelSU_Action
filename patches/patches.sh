@@ -11,12 +11,13 @@ patch_files=(
     fs/read_write.c
     fs/stat.c
     drivers/input/input.c
-    KernelSU/kernel/ksu.c
+    drivers/kernelsu/ksu.c
+    drivers/kernelsu/selinux/selinux.c
 )
 
 for i in "${patch_files[@]}"; do
 
-    if [[ "$i" != KernelSU/kernel/ksu.c ]] && grep -q "ksu" "$i"; then
+    if grep -q "ksu" "$i"; then
         echo "Warning: $i contains KernelSU"
         continue
     fi
@@ -73,9 +74,15 @@ for i in "${patch_files[@]}"; do
         sed -i '/int disposition = input_get_disposition(dev, type, code, &value);/a\	#ifdef CONFIG_KSU\n	if (unlikely(ksu_input_hook))\n		ksu_handle_input_handle_event(&type, &code, &value);\n	#endif' drivers/input/input.c
         ;;
 
-    KernelSU/kernel/ksu.c)
+    drivers/kernelsu/ksu.c)
         echo "[PATCH] Patching KernelSU/kernel/ksu.c"
-        sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' KernelSU/kernel/ksu.c
+        sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
+        ;;
+
+    drivers/kernelsu/selinux/selinux.c)
+        echo "[PATCH] Patching drivers/kernelsu/selinux/selinux.c"
+        sed -i 's/static inline u32 current_sid(void)/#ifndef __LINUX_SELINUX_SECUR_H__\nstatic inline u32 current_sid(void)/' drivers/kernelsu/selinux/selinux.c
+        sed -i 's/return current_security()->sid;/return current_security()->sid;\n#endif/' drivers/kernelsu/selinux/selinux.c
         ;;
     esac
 
