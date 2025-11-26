@@ -245,6 +245,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         echo "[PATCH] Disabling KernelSU SELinux entirely"
+        sed -i '/static inline u32 current_sid/,/}/ s/^/\/\//' drivers/kernelsu/selinux/selinux.c
         sed -i 's/return result;/return true;/g' drivers/kernelsu/selinux/selinux.c
         sed -i 's/return false;/return true;/g' drivers/kernelsu/selinux/selinux.c
 
