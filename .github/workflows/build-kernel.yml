@@ -240,14 +240,10 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
         if [ "${{ env.DISABLE_KSU_SELINUX }}" = "true" ]; then
-            echo "[PATCH] Disabling KernelSU SELinux via Makefile"
-            sed -i 's/^kernelsu-objs += selinux\/selinux.o/# ifeq ($(CONFIG_DISABLE_KSU_SELINUX),y)\n#   $(warning KernelSU SELinux disabled)\n#else\nkernelsu-objs += selinux\/selinux.o/' drivers/kernelsu/Makefile
-            sed -i 's/^kernelsu-objs += selinux\/sepolicy.o/kernelsu-objs += selinux\/sepolicy.o\n#endif/' drivers/kernelsu/Makefile
-            sed -i 's/^kernelsu-objs += selinux\/rules.o/kernelsu-objs += selinux\/rules.o/' drivers/kernelsu/Makefile
-
-            if ! grep -q "^CONFIG_DISABLE_KSU_SELINUX=y" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
-                echo "CONFIG_DISABLE_KSU_SELINUX=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-            fi
+            echo "[PATCH] Force disabling KernelSU SELinux via Makefile removal"
+            sed -i 's#^kernelsu-objs += selinux/selinux.o#// kernelsu-objs += selinux/selinux.o#g' drivers/kernelsu/Makefile
+            sed -i 's#^kernelsu-objs += selinux/sepolicy.o#// kernelsu-objs += selinux/sepolicy.o#g' drivers/kernelsu/Makefile
+            sed -i 's#^kernelsu-objs += selinux/rules.o#// kernelsu-objs += selinux/rules.o#g' drivers/kernelsu/Makefile
         fi
 
     - name: Setup ccache
