@@ -280,6 +280,11 @@ jobs:
 
         sed -i 's#selinux/.*\.o##g' drivers/kernelsu/Makefile
         grep -q 'no_selinux.o' drivers/kernelsu/Makefile || echo "kernelsu-objs += selinux/no_selinux.o" >> drivers/kernelsu/Makefile
+        
+        echo "[PATCH] Enable KALLSYMS_ALL and MODULE_FORCE_LOAD for module support"
+        scripts/config --enable CONFIG_KALLSYMS_ALL
+        scripts/config --enable CONFIG_MODULE_FORCE_LOAD
+        yes "" | make oldconfig
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
