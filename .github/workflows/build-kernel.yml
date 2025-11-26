@@ -245,10 +245,8 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         echo "[PATCH] Disabling KernelSU SELinux entirely"
-        sed -i 's#^kernelsu-objs += selinux/#\#kernelsu-objs += selinux/#g' drivers/kernelsu/Makefile
-        
-        echo "===== AFTER PATCH: drivers/kernelsu/Makefile ====="
-        sed -n '1,200p' drivers/kernelsu/Makefile
+        sed -i 's/return result;/return true;/g' drivers/kernelsu/selinux/selinux.c
+        sed -i 's/return false;/return true;/g' drivers/kernelsu/selinux/selinux.c
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
