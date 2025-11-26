@@ -238,6 +238,13 @@ jobs:
         if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
+        if [ ${{ env.DISABLE_KSU_SELINUX }} = true ]; then
+            if ! grep -q "^CONFIG_KSU_SELINUX=" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
+                echo "CONFIG_KSU_SELINUX=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            else
+                sed -i 's/CONFIG_KSU_SELINUX=y/CONFIG_KSU_SELINUX=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            fi
+        fi
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
