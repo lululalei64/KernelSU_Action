@@ -240,14 +240,46 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
 
-    - name: Disable KernelSU SELinux
+    - name: Add no_selinux fallback and disable original selinux sources
       if: env.DISABLE_KSU_SELINUX == 'true'
       run: |
+        set -e
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        echo "[PATCH] Disabling KernelSU SELinux entirely"
-        sed -i '/static inline u32 current_sid/,/}/ s/^/\/\//' drivers/kernelsu/selinux/selinux.c
-        sed -i 's/return result;/return true;/g' drivers/kernelsu/selinux/selinux.c
-        sed -i 's/return false;/return true;/g' drivers/kernelsu/selinux/selinux.c
+        echo "[PATCH] Add selinux/no_selinux.c and disable original selinux sources"
+
+        mkdir -p drivers/kernelsu/selinux
+        cat > drivers/kernelsu/selinux/no_selinux.c <<'EOF'
+
+        #include <linux/types.h>
+        #include <linux/uaccess.h>
+        #include <linux/errno.h>
+        #include <linux/kernel.h>
+
+        void setup_selinux(const char *domain) {}
+        int handle_sepolicy(void *arg) { return 0; }
+        int selinux_inode(void *a, void *b) { return 0; }
+        bool is_ksu_domain(void) { return true; }
+        bool is_zygote(void *sec) { return false; }
+        u32 ksu_get_devpts_sid(void) { return 0; }
+        int apply_kernelsu_rules(void *a, void *b) { return 0; }
+
+        ssize_t strncpy_from_user_nofault(char *to, const char __user *from, size_t count)
+        {
+            size_t i;
+            if (!to || !from) return -EFAULT;
+            for (i = 0; i < count; i++) {
+                char c;
+                if (copy_from_user(&c, from + i, 1))
+                    return -EFAULT;
+                to[i] = c;
+                if (c == '\0') return i;
+            }
+            return count;
+        }
+        EOF
+
+        sed -i 's#selinux/.*\.o##g' drivers/kernelsu/Makefile
+        grep -q 'no_selinux.o' drivers/kernelsu/Makefile || echo "kernelsu-objs += selinux/no_selinux.o" >> drivers/kernelsu/Makefile
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
