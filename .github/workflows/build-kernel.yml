@@ -240,10 +240,9 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
         if [ ${{ env.DISABLE_KSU_SELINUX }} = true ]; then
-            if ! grep -q "^CONFIG_KSU_SELINUX=" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
-                echo "CONFIG_KSU_SELINUX=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-            else
-                sed -i 's/CONFIG_KSU_SELINUX=y/CONFIG_KSU_SELINUX=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            if [ -d drivers/kernelsu/selinux ]; then
+                echo "[PATCH] Removing KernelSU SELinux extension for legacy kernel"
+                rm -rf drivers/kernelsu/selinux
             fi
         fi
 
