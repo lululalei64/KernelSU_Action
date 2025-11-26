@@ -12,7 +12,6 @@ patch_files=(
     fs/stat.c
     drivers/input/input.c
     drivers/kernelsu/ksu.c
-    drivers/kernelsu/selinux/selinux.c
 )
 
 for i in "${patch_files[@]}"; do
@@ -77,11 +76,6 @@ for i in "${patch_files[@]}"; do
     drivers/kernelsu/ksu.c)
         echo "[PATCH] Patching drivers/kernelsu/ksu.c"
         sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
-        ;;
-
-    drivers/kernelsu/selinux/selinux.c)
-        echo "[PATCH] Patching drivers/kernelsu/selinux/selinux.c"
-        sed -i '/static inline u32 current_sid(void)/,/^}/ s/^/\/\/ /' drivers/kernelsu/selinux/selinux.c
         ;;
     esac
 
