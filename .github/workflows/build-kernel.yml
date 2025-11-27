@@ -46,7 +46,6 @@ jobs:
             ADD_OVERLAYFS_CONFIG
             DISABLE_CC_WERROR
             APPLY_KSU_PATCH
-            DISABLE_KSU_SELINUX
             USE_CUSTOM_ANYKERNEL3
             CUSTOM_ANYKERNEL3_SOURCE
             CUSTOM_ANYKERNEL3_BRANCH
@@ -57,6 +56,8 @@ jobs:
             KSU_EXPECTED_SIZE
             KSU_EXPECTED_HASH
             REMOVE_UNUSED_PACKAGES
+            ENABLE_SUKISU
+            SUKISU_TAG
         )
 
         for CONFIG in "${CONFIG_LIST[@]}"; do
@@ -208,10 +209,15 @@ jobs:
         KSU_VERSION=$(cd KernelSU && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
         echo "UPLOADNAME=-KernelSU_$KSU_VERSION" >> $GITHUB_ENV
 
+    - name: Setup SukiSU
+      if: env.ENABLE_SUKISU == 'true'
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s ${{ env.SUKISU_TAG }}
+
     - name: Setup Configuration for Kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        find . -type f -name "ksu.c"
         if [ ${{ env.APPLY_KSU_PATCH }} = true ]; then
             bash $GITHUB_WORKSPACE/patches/patches.sh
             if grep -q "CONFIG_KSU" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
@@ -239,57 +245,6 @@ jobs:
         if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
-        if [ ${{ env.DISABLE_KSU_SELINUX }} = true ]; then
-            echo "[PATCH] Enable KALLSYMS_ALL and MODULE_FORCE_LOAD for module support"
-        
-            CONFIG_FILE=arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
-            grep -q "^CONFIG_KALLSYMS_ALL=y" $CONFIG_FILE || echo "CONFIG_KALLSYMS_ALL=y" >> $CONFIG_FILE
-            grep -q "^CONFIG_MODULE_FORCE_LOAD=y" $CONFIG_FILE || echo "CONFIG_MODULE_FORCE_LOAD=y" >> $CONFIG_FILE
-            echo "[PATCH] Done OverlayFS patching"
-        fi
-
-    - name: Add no_selinux fallback and disable original selinux sources
-      if: env.DISABLE_KSU_SELINUX == 'true'
-      run: |
-        set -e
-        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        echo "[PATCH] Add selinux/no_selinux.c and disable original selinux sources"
-
-        mkdir -p drivers/kernelsu/selinux
-        cat > drivers/kernelsu/selinux/no_selinux.c <<'EOF'
-
-        #include <linux/types.h>
-        #include <linux/uaccess.h>
-        #include <linux/errno.h>
-        #include <linux/kernel.h>
-
-        void setup_selinux(const char *domain) {}
-        int handle_sepolicy(void *arg) { return 0; }
-        int selinux_inode(void *a, void *b) { return 0; }
-        bool is_ksu_domain(void) { return true; }
-        bool is_zygote(void *sec) { return false; }
-        bool ksu_allow_overlayfs(void) { return true; }
-        bool ksu_is_allow_overlayfs(void) { return true; }
-        u32 ksu_get_devpts_sid(void) { return 0; }
-        int apply_kernelsu_rules(void *a, void *b) { return 0; }
-
-        ssize_t strncpy_from_user_nofault(char *to, const char __user *from, size_t count)
-        {
-            size_t i;
-            if (!to || !from) return -EFAULT;
-            for (i = 0; i < count; i++) {
-                char c;
-                if (copy_from_user(&c, from + i, 1))
-                    return -EFAULT;
-                to[i] = c;
-                if (c == '\0') return i;
-            }
-            return count;
-        }
-        EOF
-
-        sed -i 's#selinux/.*\.o##g' drivers/kernelsu/Makefile
-        grep -q 'no_selinux.o' drivers/kernelsu/Makefile || echo "kernelsu-objs += selinux/no_selinux.o" >> drivers/kernelsu/Makefile
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
