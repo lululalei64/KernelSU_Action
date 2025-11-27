@@ -284,7 +284,6 @@ jobs:
         echo "[PATCH] Enable KALLSYMS_ALL and MODULE_FORCE_LOAD for module support"
         scripts/config --enable CONFIG_KALLSYMS_ALL
         scripts/config --enable CONFIG_MODULE_FORCE_LOAD
-        zcat /proc/config.gz | grep CONFIG_OVERLAY_FS
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
