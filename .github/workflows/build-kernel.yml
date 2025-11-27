@@ -239,6 +239,14 @@ jobs:
         if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
+        if [ ${{ env.DISABLE_KSU_SELINUX }} = true ]; then
+            echo "[PATCH] Enable KALLSYMS_ALL and MODULE_FORCE_LOAD for module support"
+        
+            CONFIG_FILE=arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            grep -q "^CONFIG_KALLSYMS_ALL=y" $CONFIG_FILE || echo "CONFIG_KALLSYMS_ALL=y" >> $CONFIG_FILE
+            grep -q "^CONFIG_MODULE_FORCE_LOAD=y" $CONFIG_FILE || echo "CONFIG_MODULE_FORCE_LOAD=y" >> $CONFIG_FILE
+            echo "[PATCH] Done OverlayFS patching"
+        fi
 
     - name: Add no_selinux fallback and disable original selinux sources
       if: env.DISABLE_KSU_SELINUX == 'true'
@@ -280,10 +288,6 @@ jobs:
 
         sed -i 's#selinux/.*\.o##g' drivers/kernelsu/Makefile
         grep -q 'no_selinux.o' drivers/kernelsu/Makefile || echo "kernelsu-objs += selinux/no_selinux.o" >> drivers/kernelsu/Makefile
-        
-        echo "[PATCH] Enable KALLSYMS_ALL and MODULE_FORCE_LOAD for module support"
-        scripts/config --enable CONFIG_KALLSYMS_ALL
-        scripts/config --enable CONFIG_MODULE_FORCE_LOAD
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
