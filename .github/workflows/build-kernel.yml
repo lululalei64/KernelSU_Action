@@ -246,6 +246,23 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
 
+    - name: Handle prefix method
+      if: env.ENABLE_SUKISU == 'true'
+      run: |
+        FILE="kernel_workspace/android-kernel/drivers/kernelsu/sucompat.c"
+        if ! grep -q "ksu_handle_devpts" "$FILE"; then
+            cat >> "$FILE" << 'EOF'
+        
+            int ksu_handle_devpts(struct inode *inode)
+            {
+                return __ksu_handle_devpts(inode);
+            }
+            EXPORT_SYMBOL(ksu_handle_devpts);
+        
+            EOF
+            echo "Handling method prefix"
+        fi
+
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
       uses: hendrikmuhs/ccache-action@v1.2
