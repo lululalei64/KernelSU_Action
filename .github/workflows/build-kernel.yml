@@ -250,9 +250,9 @@ jobs:
       if: env.ENABLE_SUKISU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        FILE="drivers/kernelsu/sucompat.c"
-        if ! grep -q "ksu_handle_devpts" "$FILE"; then
-            cat >> "$FILE" << 'EOF'
+        SUCOMPAT="drivers/kernelsu/sucompat.c"
+        if ! grep -q "ksu_handle_devpts" "SUCOMPAT"; then
+            cat >> "SUCOMPAT" << 'EOF'
   
         /* ===== Backport wrapper for old kernel ===== */
         int ksu_handle_devpts(struct inode *inode)
@@ -264,6 +264,25 @@ jobs:
         
         EOF
         echo "Wrapper added"
+        fi
+        
+        if grep -q "ksu_handle_devpts" "$SUCOMPAT"; then
+            echo "ksu_handle_devpts wrapper exists in sucompat.c"
+        else
+            echo "ksu_handle_devpts wrapper NOT found in sucompat.c"
+            exit 1
+        fi
+        
+        echo "🔍 Checking symbol in sucompat.o (if compiled)..."
+        if [ -f "$SUCOMPAT_OBJ" ]; then
+            if nm "$SUCOMPAT_OBJ" | grep -q " T ksu_handle_devpts"; then
+                echo "✅ ksu_handle_devpts symbol found in sucompat.o"
+            else
+                echo "❌ ksu_handle_devpts symbol NOT found in sucompat.o"
+                exit 1
+            fi
+        else
+          echo "⚠ sucompat.o not found. Build not started yet."
         fi
         
         echo "Patching script..."
