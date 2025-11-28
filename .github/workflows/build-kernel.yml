@@ -263,6 +263,9 @@ jobs:
         
         EOF
         echo "Wrapper added"
+        
+        sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' kernel_workspace/android-kernel/drivers/kernelsu/ksud.c
+        sed -i '/int nuke_ext4_sysfs/,/}/ s/\<return;$/return 0;/' kernel_workspace/android-kernel/drivers/kernelsu/ksud.c
         fi
 
     - name: Setup ccache
