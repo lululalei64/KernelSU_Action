@@ -249,7 +249,8 @@ jobs:
     - name: Handle prefix method
       if: env.ENABLE_SUKISU == 'true'
       run: |
-        FILE="kernel_workspace/android-kernel/drivers/kernelsu/sucompat.c"
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        FILE="drivers/kernelsu/sucompat.c"
         if ! grep -q "ksu_handle_devpts" "$FILE"; then
             cat >> "$FILE" << 'EOF'
   
@@ -263,10 +264,15 @@ jobs:
         
         EOF
         echo "Wrapper added"
-        
-        sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' kernel_workspace/android-kernel/drivers/kernelsu/ksud.c
-        sed -i '/int nuke_ext4_sysfs/,/}/ s/\<return;$/return 0;/' kernel_workspace/android-kernel/drivers/kernelsu/ksud.c
         fi
+        
+        echo "Patching script..."
+        sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' drivers/kernelsu/ksud.c
+        sed -i '/int nuke_ext4_sysfs/,/}/ s/\<return;$/return 0;/' drivers/kernelsu/ksud.c
+        echo "------ patched preview ------"
+        grep -n "nuke_ext4_sysfs" drivers/kernelsu/ksud.c || true
+        grep -n "return 0;" drivers/kernelsu/ksud.c || true
+        echo "-----------------------------"
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
