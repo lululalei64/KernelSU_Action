@@ -251,8 +251,10 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         SUCOMPAT="drivers/kernelsu/sucompat.c"
-        if ! grep -q "ksu_handle_devpts" "SUCOMPAT"; then
-            cat >> "SUCOMPAT" << 'EOF'
+        SUCOMPAT_OBJ="out/drivers/kernelsu/sucompat.o"
+        
+        if ! grep -q "ksu_handle_devpts" "$SUCOMPAT"; then
+            cat >> "$SUCOMPAT" << 'EOF'
   
         /* ===== Backport wrapper for old kernel ===== */
         int ksu_handle_devpts(struct inode *inode)
@@ -289,10 +291,6 @@ jobs:
         sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' drivers/kernelsu/ksud.c
         sed -i '114s/^[[:space:]]*return;[[:space:]]*$/        return 0;/' drivers/kernelsu/ksud.c
         sed -i '122s/^[[:space:]]*return;[[:space:]]*$/        return 0;/' drivers/kernelsu/ksud.c
-        echo "------ patched preview ------"
-        grep -n "nuke_ext4_sysfs" drivers/kernelsu/ksud.c || true
-        grep -n "return 0;" drivers/kernelsu/ksud.c || true
-        echo "-----------------------------"
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
