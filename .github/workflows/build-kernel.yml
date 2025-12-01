@@ -253,8 +253,7 @@ jobs:
         SUCOMPATH="drivers/kernelsu/sucompat.h"
         SUCOMPATC="drivers/kernelsu/sucompat.c"
         
-        if ! grep -q "ksu_handle_devpts(" "$SUCOMPATC"; then
-            cat >> "$SUCOMPATC" <<'EOF'
+        cat >> "$SUCOMPATC" <<'EOF'
 
         /* ===== Backport wrapper for old kernel ===== */
         int ksu_handle_devpts(struct inode *inode)
@@ -268,7 +267,6 @@ jobs:
 
         EOF
             echo "sucompat added"
-        fi
 
         if ! grep -q "extern int __ksu_handle_devpts(" "$SUCOMPATH"; then
             cat >> "$SUCOMPATH" << 'EOF'
