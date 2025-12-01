@@ -250,28 +250,27 @@ jobs:
       if: env.ENABLE_SUKISU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        KSUD="drivers/kernelsu/ksud.c"
-        SUCOMPAT="drivers/kernelsu/sucompat.h"
+        SUCOMPATH="drivers/kernelsu/sucompat.h"
+        SUCOMPATC="drivers/kernelsu/sucompat.c"
         
-        if ! grep -q "ksu_handle_devpts(" "$KSUD"; then
-            last_include_line=$(grep -n "^#include" "$KSUD" | tail -1 | cut -d: -f1)
-            
-            sed -i "$((last_include_line+1))r /dev/stdin" "$KSUD" << 'EOF'
-
-        /* ===== Backport wrapper for old kernel ===== */
-        int ksu_handle_devpts(struct inode *inode)
-        {
-            return __ksu_handle_devpts(inode);
-        }
-        EXPORT_SYMBOL(ksu_handle_devpts);
-        /* ===== End of backport wrapper ===== */
-
-        EOF
-            echo "ksud added"
+        if ! grep -q "ksu_handle_devpts(" "$SUCOMPATC"; then
+            sed -i '/EXPORT_SYMBOL(__ksu_handle_devpts)/a \
+        \
+        /* ===== Backport wrapper for old kernel ===== */\
+        int ksu_handle_devpts(struct inode *inode)\
+        {\
+            if (!inode)\
+                return 0;\
+            return __ksu_handle_devpts(inode);\
+        }\
+        EXPORT_SYMBOL(ksu_handle_devpts);\
+        /* ===== End of backport wrapper ===== */\
+        ' "$SUCOMPATC"
+            echo "sucompat added"
         fi
 
-        if ! grep -q "__ksu_handle_devpts" "$SUCOMPAT"; then
-            cat >> "$SUCOMPAT" << 'EOF'
+        if ! grep -q "extern int __ksu_handle_devpts(" "$SUCOMPATH"; then
+            cat >> "$SUCOMPATH" << 'EOF'
 
         /* ===== Added for devpts support (KernelSU) ===== */
         extern int __ksu_handle_devpts(struct inode *inode);
@@ -280,7 +279,6 @@ jobs:
         EOF
         fi
 
-        grep -n "ksu_handle_devpts" drivers/kernelsu/ksud.c
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
 
         echo "Patching script..."
