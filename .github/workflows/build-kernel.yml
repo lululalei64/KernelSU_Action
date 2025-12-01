@@ -281,11 +281,6 @@ jobs:
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.c
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
 
-        echo "Patching script..."
-        sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' drivers/kernelsu/ksud.c
-        sed -i '114s/^[[:space:]]*return;[[:space:]]*$/        return 0;/' drivers/kernelsu/ksud.c
-        sed -i '122s/^[[:space:]]*return;[[:space:]]*$/        return 0;/' drivers/kernelsu/ksud.c
-
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
       uses: hendrikmuhs/ccache-action@v1.2
