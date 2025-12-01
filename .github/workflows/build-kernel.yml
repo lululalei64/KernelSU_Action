@@ -253,17 +253,20 @@ jobs:
         KSUD="drivers/kernelsu/ksud.c"
         SUCOMPAT="drivers/kernelsu/sucompat.h"
         
-        if ! grep -q "ksu_handle_devpts" "$KSUD"; then
-            sed -i '/^#include/{
-                a \
-            /* ===== Backport wrapper for old kernel ===== */\
-            int ksu_handle_devpts(struct inode *inode)\
-            {\
-                return __ksu_handle_devpts(inode);\
-            }\
-            EXPORT_SYMBOL(ksu_handle_devpts);\
-            /* ===== End of backport wrapper ===== */
-            }' "$KSUD"
+        if ! grep -q "ksu_handle_devpts(" "$KSUD"; then
+            last_include_line=$(grep -n "^#include" "$KSUD" | tail -1 | cut -d: -f1)
+            
+            sed -i "$((last_include_line+1))r /dev/stdin" "$KSUD" << 'EOF'
+
+        /* ===== Backport wrapper for old kernel ===== */
+        int ksu_handle_devpts(struct inode *inode)
+        {
+            return __ksu_handle_devpts(inode);
+        }
+        EXPORT_SYMBOL(ksu_handle_devpts);
+        /* ===== End of backport wrapper ===== */
+
+        EOF
             echo "ksud added"
         fi
 
@@ -278,7 +281,7 @@ jobs:
         fi
 
         grep -n "ksu_handle_devpts" drivers/kernelsu/ksud.c
-        grep -n "__ksu_handle_devpts" drivers/kernelsu/sucompat.h
+        grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
 
         echo "Patching script..."
         sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' drivers/kernelsu/ksud.c
