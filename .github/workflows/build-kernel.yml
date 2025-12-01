@@ -254,18 +254,19 @@ jobs:
         SUCOMPATC="drivers/kernelsu/sucompat.c"
         
         if ! grep -q "ksu_handle_devpts(" "$SUCOMPATC"; then
-            sed -i '/EXPORT_SYMBOL(__ksu_handle_devpts)/a \
-        \
-        /* ===== Backport wrapper for old kernel ===== */\
-        int ksu_handle_devpts(struct inode *inode)\
-        {\
-            if (!inode)\
-                return 0;\
-            return __ksu_handle_devpts(inode);\
-        }\
-        EXPORT_SYMBOL(ksu_handle_devpts);\
-        /* ===== End of backport wrapper ===== */\
-        ' "$SUCOMPATC"
+            cat >> "$SUCOMPATC" <<'EOF'
+
+        /* ===== Backport wrapper for old kernel ===== */
+        int ksu_handle_devpts(struct inode *inode)
+        {
+            if (!inode)
+                return 0;
+            return __ksu_handle_devpts(inode);
+        }
+        EXPORT_SYMBOL(ksu_handle_devpts);
+        /* ===== End of backport wrapper ===== */
+
+        EOF
             echo "sucompat added"
         fi
 
