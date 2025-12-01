@@ -279,6 +279,7 @@ jobs:
         EOF
         fi
 
+        grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.c
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
 
         echo "Patching script..."
@@ -292,15 +293,6 @@ jobs:
       with:
         key: build-kernel-${{ env.DEVICE }}${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}
         max-size: 2G
-
-    - name: Check defconfig before build
-      run: |
-        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
-        echo "=== Checking defconfig file: $CONFIG_FILE ==="
-        cat "$CONFIG_FILE" | grep -E "(OVERLAY|KALLSYMS|MODULE)" || true
-        echo "=== Full defconfig content ==="
-        cat "$CONFIG_FILE"
 
     - name: Build kernel
       run: |
