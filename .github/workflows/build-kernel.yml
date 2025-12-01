@@ -246,47 +246,40 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
 
-    - name: Handle prefix method
+    - name: Handle sukisu nongki issue
       if: env.ENABLE_SUKISU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        SUCOMPAT="drivers/kernelsu/sucompat.c"
-        SUCOMPAT_OBJ="out/drivers/kernelsu/sucompat.o"
+        KSUD="drivers/kernelsu/ksud.c"
+        SUCOMPAT="drivers/kernelsu/sucompat.h"
         
-        if ! grep -q "ksu_handle_devpts" "$SUCOMPAT"; then
+        if ! grep -q "ksu_handle_devpts" "$KSUD"; then
+            sed -i '/^#include/{
+                a \
+            /* ===== Backport wrapper for old kernel ===== */\
+            int ksu_handle_devpts(struct inode *inode)\
+            {\
+                return __ksu_handle_devpts(inode);\
+            }\
+            EXPORT_SYMBOL(ksu_handle_devpts);\
+            /* ===== End of backport wrapper ===== */
+            }' "$KSUD"
+            echo "ksud added"
+        fi
+
+        if ! grep -q "__ksu_handle_devpts" "$SUCOMPAT"; then
             cat >> "$SUCOMPAT" << 'EOF'
-  
-        /* ===== Backport wrapper for old kernel ===== */
-        int ksu_handle_devpts(struct inode *inode)
-        {
-          return __ksu_handle_devpts(inode);
-        }
-        EXPORT_SYMBOL(ksu_handle_devpts);
-        /* ===== End of backport wrapper ===== */
-        
+
+        /* ===== Added for devpts support (KernelSU) ===== */
+        extern int __ksu_handle_devpts(struct inode *inode);
+        extern int ksu_handle_devpts(struct inode *inode);
+        /* ===== End devpts support ===== */
         EOF
-        echo "Wrapper added"
         fi
-        
-        if grep -q "ksu_handle_devpts" "$SUCOMPAT"; then
-            echo "ksu_handle_devpts wrapper exists in sucompat.c"
-        else
-            echo "ksu_handle_devpts wrapper NOT found in sucompat.c"
-            exit 1
-        fi
-        
-        echo "🔍 Checking symbol in sucompat.o (if compiled)..."
-        if [ -f "$SUCOMPAT_OBJ" ]; then
-            if nm "$SUCOMPAT_OBJ" | grep -q " T ksu_handle_devpts"; then
-                echo "✅ ksu_handle_devpts symbol found in sucompat.o"
-            else
-                echo "❌ ksu_handle_devpts symbol NOT found in sucompat.o"
-                exit 1
-            fi
-        else
-          echo "⚠ sucompat.o not found. Build not started yet."
-        fi
-        
+
+        grep -n "ksu_handle_devpts" drivers/kernelsu/ksud.c
+        grep -n "__ksu_handle_devpts" drivers/kernelsu/sucompat.h
+
         echo "Patching script..."
         sed -i 's/nuke_ext4_sysfs();/nuke_ext4_sysfs(\"\/sys\/fs\/ext4\");/' drivers/kernelsu/ksud.c
         sed -i '114s/^[[:space:]]*return;[[:space:]]*$/        return 0;/' drivers/kernelsu/ksud.c
