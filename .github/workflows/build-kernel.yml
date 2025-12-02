@@ -220,7 +220,7 @@ jobs:
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         if [ ${{ env.APPLY_KSU_PATCH }} = true ]; then
             bash $GITHUB_WORKSPACE/patches/patches.sh
-            echo ”Check patching script result“
+            echo "Check patching script result"
             grep -R "ksu_execveat_hook" fs/exec.c
         
             if grep -q "CONFIG_KSU" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
