@@ -58,6 +58,7 @@ jobs:
             REMOVE_UNUSED_PACKAGES
             ENABLE_SUKISU
             SUKISU_TAG
+            RUN_SH
         )
 
         for CONFIG in "${CONFIG_LIST[@]}"; do
@@ -219,7 +220,24 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         if [ ${{ env.APPLY_KSU_PATCH }} = true ]; then
-            bash $GITHUB_WORKSPACE/patches/patches.sh
+            if [ "${{ env.RUN_SH }}" = "true" ]; then
+                echo "Executing patches.sh"
+                bash $GITHUB_WORKSPACE/patches/patches.sh
+            else
+                echo "Applying .patch patch"
+                PATCH_FILE="$GITHUB_WORKSPACE/patches/suki.patch"
+                if [ ! -f "$PATCH_FILE" ]; then
+                    echo "Patch file not found: $PATCH_FILE"
+                    exit 1
+                fi
+                if git apply --check "$PATCH_FILE"; then
+                    git apply --ignore-space-change --ignore-whitespace "$PATCH_FILE"
+                    echo "Patch successfully applied"
+                else
+                    echo "Patch already applied, skipping"
+                fi
+            fi
+        
             if grep -q "CONFIG_KSU" arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}; then
                 sed -i 's/# CONFIG_KSU is not set/CONFIG_KSU=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
                 sed -i 's/CONFIG_KSU=n/CONFIG_KSU=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
