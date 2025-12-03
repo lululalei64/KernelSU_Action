@@ -284,6 +284,15 @@ jobs:
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.c
         grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
 
+    - name: Check defconfig before build
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+        CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
+        echo "=== Checking defconfig file: $CONFIG_FILE ==="
+        cat "$CONFIG_FILE" | grep -E "(OVERLAY|KALLSYMS|MODULE)" || true
+        echo "=== Full defconfig content ==="
+        cat "$CONFIG_FILE"   
+
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
       uses: hendrikmuhs/ccache-action@v1.2
