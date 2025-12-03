@@ -11,6 +11,7 @@ patch_files=(
     fs/read_write.c
     fs/stat.c
     drivers/input/input.c
+    drivers/kernelsu/ksu.c
 )
 
 for i in "${patch_files[@]}"; do
@@ -70,6 +71,11 @@ for i in "${patch_files[@]}"; do
     drivers/input/input.c)
         sed -i '/static void input_handle_event/i\#ifdef CONFIG_KSU\nextern bool ksu_input_hook __read_mostly;\nextern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);\n#endif\n' drivers/input/input.c
         sed -i '/int disposition = input_get_disposition(dev, type, code, &value);/a\	#ifdef CONFIG_KSU\n	if (unlikely(ksu_input_hook))\n		ksu_handle_input_handle_event(&type, &code, &value);\n	#endif' drivers/input/input.c
+        ;;
+
+    drivers/kernelsu/ksu.c)
+        echo "[PATCH] Patching drivers/kernelsu/ksu.c"
+        sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#ifdef MODULE_IMPORT_NS\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
         ;;
     esac
 
