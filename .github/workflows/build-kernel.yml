@@ -58,6 +58,8 @@ jobs:
             REMOVE_UNUSED_PACKAGES
             ENABLE_SUKISU
             SUKISU_TAG
+            ADD_KPM_CONFIG
+            APPLY_SUCOMPAT_PATCH
         )
 
         for CONFIG in "${CONFIG_LIST[@]}"; do
@@ -248,9 +250,13 @@ jobs:
         if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
+        if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
+            sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KPM=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+        fi
 
     - name: Handle sukisu nongki issue
-      if: env.ENABLE_SUKISU == 'true'
+      if: env.APPLY_SUCOMPAT_PATCH == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         SUCOMPATH="drivers/kernelsu/sucompat.h"
@@ -289,7 +295,7 @@ jobs:
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
         echo "=== Checking defconfig file: $CONFIG_FILE ==="
-        cat "$CONFIG_FILE" | grep -E "(OVERLAY|KALLSYMS|MODULE)" || true
+        cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU)" || true
         echo "=== Full defconfig content ==="
         cat "$CONFIG_FILE"   
 
