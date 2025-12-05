@@ -213,7 +213,7 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          cd kernel_platform
+          cd android-kernel
           echo "正在给内核打susfs补丁"
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
@@ -225,7 +225,7 @@ jobs:
 
       - name: Apply Hide Stuff Patches
         run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace/kernel_platform/common
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/common
           cp ../../SukiSU_patch/69_hide_stuff.patch ./
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
