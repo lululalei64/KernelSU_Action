@@ -213,6 +213,7 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          
           cd android-kernel
           
           echo "正在给内核打susfs补丁"
@@ -222,11 +223,8 @@ jobs:
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
           
           echo "==== Searching SUSFS ===="
-          find . -iname "*susfs*" || echo "No SUSFS found!"
+          find . -iname "*susfs*" -exec readlink -f {} \; || echo "No SUSFS found!"
           echo "========================="
-          
-          echo "2 查找sufs"
-          ls -R drivers/kernelsu | grep susfs -n
           
           patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
           echo "完成"
