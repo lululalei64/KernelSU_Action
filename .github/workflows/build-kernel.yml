@@ -60,6 +60,7 @@ jobs:
             SUKISU_TAG
             ADD_KPM_CONFIG
             APPLY_SUCOMPAT_PATCH
+            ADD_SUFS_CONFIG
         )
 
         for CONFIG in "${CONFIG_LIST[@]}"; do
@@ -221,7 +222,6 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         if [ ${{ env.APPLY_KSU_PATCH }} = true ]; then
-            bash $GITHUB_WORKSPACE/patches/patches.sh
             echo "Check patching script result"
             grep -R "ksu_execveat_hook" fs/exec.c
         
@@ -253,6 +253,9 @@ jobs:
         if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
             sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KPM=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+        fi
+        if [ ${{ env.ADD_SUFS_CONFIG }} = true ]; then
+            echo "CONFIG_KSU_SUSFS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
 
     - name: Handle sukisu nongki issue
@@ -295,7 +298,7 @@ jobs:
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
         echo "=== Checking defconfig file: $CONFIG_FILE ==="
-        cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU)" || true
+        cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
         echo "=== Full defconfig content ==="
         cat "$CONFIG_FILE"   
 
