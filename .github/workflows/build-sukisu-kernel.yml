@@ -216,21 +216,22 @@ jobs:
           cd android-kernel
           
           echo "正在给内核打susfs补丁"
-          ls -al $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          ls $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
           
-          ls -al $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          echo "cp后的dir"
+          ls $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
           patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
           echo "完成"
 
       - name: Apply Hide Stuff Patches
         run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/common
-          cp ../../SukiSU_patch/69_hide_stuff.patch ./
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          cp ../SukiSU_patch/69_hide_stuff.patch ./
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
 
@@ -259,9 +260,6 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
-          
-          # Remove check_defconfig
-          sed -i 's/check_defconfig//' ./common/build.config.gki
           
           if [ ${{ env.DISABLE-LTO }} = true ]; then
             sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
