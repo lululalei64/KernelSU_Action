@@ -214,12 +214,16 @@ jobs:
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           cd android-kernel
-          echo "正在给内核打susfs补丁"
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch ./common/
-          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           
-          cd ./common
+          echo "正在给内核打susfs补丁"
+          ls -al $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
+          cp ../susfs4ksu/kernel_patches/fs/* ./fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
+          
+          ls -al $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          
           patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
           echo "完成"
 
