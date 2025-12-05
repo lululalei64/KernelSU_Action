@@ -216,14 +216,17 @@ jobs:
           cd android-kernel
           
           echo "正在给内核打susfs补丁"
-          ls $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
           
-          echo "cp后的dir"
-          ls $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          echo "==== Searching SUSFS ===="
+          find . -iname "*susfs*" || echo "No SUSFS found!"
+          echo "========================="
+          
+          echo "2 查找sufs"
+          ls -R drivers/kernelsu | grep susfs -n
           
           patch -p1 < 50_add_susfs_in_kernel-4.19.patch || true
           echo "完成"
