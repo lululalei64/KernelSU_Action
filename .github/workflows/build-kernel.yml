@@ -257,11 +257,14 @@ jobs:
         cd ./KernelSU
         patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch
         
+        cd ..
+        pwd
         echo "patching 50"
         patch -p1 -F 3 < 50_add_susfs_in_kernel-4.19.patch || true
         echo "Checking reject:"
         cat include/linux/sched.h.rej || echo "No reject file found."
         
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         CONFIG=arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         
         echo "Adding CONFIG_KSU.."
