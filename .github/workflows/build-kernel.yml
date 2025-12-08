@@ -242,7 +242,7 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
 
-    - name: Setup KernelSU
+    - name: Apply SUSFS
       if: env.APPLY_SUSFS_PATCH == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
@@ -279,6 +279,34 @@ jobs:
         echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> $CONFIG
         echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> $CONFIG
         echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> $CONFIG
+
+    - name: Apply SUSFS Patch (task_struct)
+      if: env.APPLY_SUSFS_PATCH == 'true'
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux
+        TARGET_FILE=sched.h
+        echo "Patching ANDROID_KABI_RESERVE(8) ..."
+        sed -i '/ANDROID_KABI_RESERVE(8)/{
+          s/ANDROID_KABI_RESERVE(8)/#ifdef CONFIG_KSU_SUSFS\
+          ANDROID_KABI_USE(8, u64 susfs_last_fake_mnt_id);\
+          #else\
+          ANDROID_KABI_RESERVE(8);\
+          #endif/
+        }' $TARGET_FILE
+        
+        echo "Injecting SUSFS extra fields before randomized_struct_fields_end ..."
+        
+        sed -i '/randomized_struct_fields_end/i \
+        #if defined(CONFIG_KSU_SUSFS) && !defined(ANDROID_KABI_RESERVE)\
+        u64 susfs_task_state;\
+        #endif\
+        #if defined(CONFIG_KSU_SUSFS) && !defined(ANDROID_KABI_RESERVE)\
+        u64 susfs_last_fake_mnt_id_shadow;\
+        #endif
+        ' $TARGET_FILE
+        
+        echo "Final verification:"
+        grep -n "susfs" -n $TARGET_FILE || true
 
     - name: Check defconfig before build
       run: |
