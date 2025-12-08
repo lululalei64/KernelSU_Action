@@ -288,7 +288,9 @@ jobs:
         if grep -q "ANDROID_KABI_RESERVE(8);" "$TARGET_FILE"; then
           sed -i 's/^[[:space:]]*ANDROID_KABI_RESERVE(8);/#ifdef CONFIG_KSU_SUSFS\
             ANDROID_KABI_USE(8, u64 susfs_last_fake_mnt_id);\
-        #else/' "$TARGET_FILE"
+        #else\
+            ANDROID_KABI_RESERVE(8);\
+        #endif/' "$TARGET_FILE"
         fi
         
         echo "Injecting SUSFS extra fields before randomized_struct_fields_end ..."
@@ -304,7 +306,7 @@ jobs:
         fi
         
         echo "Final verification:"
-        grep -n "(susfs|randomized_struct_fields_end)" -n $TARGET_FILE || true
+        grep -nE "susfs_task_state|susfs_last_fake_mnt_id|randomized_struct_fields_end" "$TARGET_FILE" || true
 
     - name: Check defconfig before build
       run: |
