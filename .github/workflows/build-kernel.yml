@@ -261,8 +261,6 @@ jobs:
         pwd
         echo "patching 50"
         patch -p1 -F 3 < 50_add_susfs_in_kernel-4.19.patch || true
-        echo "Checking reject:"
-        cat include/linux/sched.h.rej || echo "No reject file found."
         
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         CONFIG=arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
@@ -286,36 +284,34 @@ jobs:
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux
         TARGET_FILE=sched.h
         echo "Patching ANDROID_KABI_RESERVE(8) ..."
-        sed -i '/ANDROID_KABI_RESERVE(8)/{
-          s/ANDROID_KABI_RESERVE(8)/#ifdef CONFIG_KSU_SUSFS\
-          ANDROID_KABI_USE(8, u64 susfs_last_fake_mnt_id);\
-          #else\
-          ANDROID_KABI_RESERVE(8);\
-          #endif/
-        }' $TARGET_FILE
+        
+        if grep -q "ANDROID_KABI_RESERVE(8);" "$TARGET_FILE"; then
+          sed -i 's/^[[:space:]]*ANDROID_KABI_RESERVE(8);/#ifdef CONFIG_KSU_SUSFS\
+            ANDROID_KABI_USE(8, u64 susfs_last_fake_mnt_id);\
+        #else/' "$TARGET_FILE"
+        fi
         
         echo "Injecting SUSFS extra fields before randomized_struct_fields_end ..."
         
-        sed -i '/randomized_struct_fields_end/i \
+        if grep -q "randomized_struct_fields_end" "$TARGET_FILE"; then
+          sed -i '/^[[:space:]]*randomized_struct_fields_end/i\
         #if defined(CONFIG_KSU_SUSFS) && !defined(ANDROID_KABI_RESERVE)\
-        u64 susfs_task_state;\
+            u64 susfs_task_state;\
         #endif\
         #if defined(CONFIG_KSU_SUSFS) && !defined(ANDROID_KABI_RESERVE)\
-        u64 susfs_last_fake_mnt_id_shadow;\
-        #endif
-        ' $TARGET_FILE
+            u64 susfs_last_fake_mnt_id;\
+        #endif' "$TARGET_FILE"
+        fi
         
         echo "Final verification:"
-        grep -n "susfs" -n $TARGET_FILE || true
+        grep -n "(susfs|randomized_struct_fields_end)" -n $TARGET_FILE || true
 
     - name: Check defconfig before build
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
         CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
         echo "=== Checking defconfig file: $CONFIG_FILE ==="
-        cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
-        echo "=== Full defconfig content ==="
-        cat "$CONFIG_FILE"   
+        cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true  
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
