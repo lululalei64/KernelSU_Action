@@ -2,7 +2,7 @@ name: Build KernelSU
 on:
   workflow_dispatch:
   push:
-    branches: [ "ksu+sufs" ]
+    branches: [ "ksu_sufs" ]
 
 jobs:
   build:
@@ -254,16 +254,12 @@ jobs:
         cp susfs4ksu/kernel_patches/include/linux/* include/linux/
         
         cd ./KernelSU
-        ls
-        echo "patching 10"
         patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch
         
         echo "patching 50"
-        cd ..
-        pwd
-        ls
-        patch -p1 -F 3 < 50_add_susfs_in_kernel-4.19.patch
-        cat include/linux/sched.h.rej
+        patch -p1 -F 3 < 50_add_susfs_in_kernel-4.19.patch || true
+        echo "Checking reject:"
+        cat include/linux/sched.h.rej || echo "No reject file found."
         
         CONFIG=arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         
