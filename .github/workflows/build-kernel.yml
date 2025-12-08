@@ -1,6 +1,7 @@
 name: Build KernelSU
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "ksu+sufs" ]
 
 jobs:
   build:
