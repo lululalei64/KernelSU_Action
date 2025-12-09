@@ -1,9 +1,9 @@
 name: Build SukiSU
 on:
-  workflow_dispatch:
   push:
     branches:
       - "sukisu"
+  workflow_dispatch:
 
 jobs:
   build:
