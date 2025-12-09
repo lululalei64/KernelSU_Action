@@ -248,12 +248,7 @@ jobs:
       - name: Patching bugs
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          pwd
-          ls
           sed -i 's/LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid)$/LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid),/' drivers/kernelsu/lsm_hook.c
-          grep -R "LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid)," -n drivers/kernelsu/lsm_hook.c \
-          && echo "task_fix_setuid patch OK" \
-          || echo "task_fix_setuid patch FAILED"
 
       - name: Add Configuration for SukiSU
         run: |
@@ -267,6 +262,7 @@ jobs:
           
           if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
+            sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
           
           if [ ${{ env.APPLY_SUSFS_PATCH }} = true ]; then

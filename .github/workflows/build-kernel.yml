@@ -244,8 +244,6 @@ jobs:
         CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
         echo "=== Checking defconfig file: $CONFIG_FILE ==="
         cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
-        echo "=== Full defconfig content ==="
-        cat "$CONFIG_FILE"   
 
     - name: Setup ccache
       if: env.ENABLE_CCACHE == 'true'
