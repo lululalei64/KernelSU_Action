@@ -253,6 +253,7 @@ jobs:
           # SukiSU Ultra config
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS=n" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           
           if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
