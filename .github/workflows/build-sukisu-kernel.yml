@@ -2,6 +2,7 @@ name: Build SukiSU
 on:
   push:
     branches:
+      - "sukisu_susfs"
       - "sukisu"
   workflow_dispatch:
 
