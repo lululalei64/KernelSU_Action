@@ -253,7 +253,6 @@ jobs:
           # SukiSU Ultra config
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS=n" >> "$CONFIG_FILE"
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           
           if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
@@ -277,11 +276,14 @@ jobs:
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
           
             if grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/core_hook.c" >/dev/null 2>&1 || grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/supercalls.c" >/dev/null 2>&1; then
               echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$CONFIG_FILE"
               echo "[+] Detected SUS_MAP."
             fi
+          else
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           fi
           
           if [ ${{ env.DISABLE-LTO }} = true ]; then
