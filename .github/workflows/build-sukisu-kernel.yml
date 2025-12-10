@@ -215,8 +215,7 @@ jobs:
         if: env.APPLY_SUSFS_PATCH == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19
-          git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          git clone https://gitlab.com/lululalei64/susfs4ksu.git -b kernel-4.19
           
           cd android-kernel
           echo "正在给内核打susfs补丁"
@@ -227,6 +226,7 @@ jobs:
           cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           
           cd ./KernelSU
+          echo "==== Patching 10_enable_susfs_for_ksu ===="
           patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch
           
           echo "==== Searching SUSFS ===="
@@ -254,7 +254,7 @@ jobs:
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS=n" >> "$CONFIG_FILE"
           
-          if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
+          if [ ${{ env.ENABLE_KPM }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
             sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
