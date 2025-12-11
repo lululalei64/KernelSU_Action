@@ -35,7 +35,7 @@
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
 
-@@ -1969,10 +1969,9 @@ struct user_arg_ptr envp = {
+@@ -1971,10 +1971,9 @@ static int compat_do_execve(struct filename *filename,
  		.is_compat = true,
  		.ptr.compat = __envp,
  	};
