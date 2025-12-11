@@ -2,6 +2,7 @@ name: Build SukiSU
 on:
   push:
     branches:
+      - "sukisu_susfs"
       - "sukisu"
   workflow_dispatch:
 
@@ -54,8 +55,8 @@ jobs:
               REMOVE_UNUSED_PACKAGES
               ENABLE_SUKISU
               SUKISU_TAG
-              ADD_KPM_CONFIG
-              APPLY_SUCOMPAT_PATCH
+              ENABLE_KPM
+              ENABLE_MANUAL_HOOK
               APPLY_SUSFS_PATCH
           )
           
@@ -215,8 +216,7 @@ jobs:
         if: env.APPLY_SUSFS_PATCH == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.19
-          git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          git clone https://gitlab.com/lululalei64/susfs4ksu.git -b kernel-4.19
           
           cd android-kernel
           echo "正在给内核打susfs补丁"
@@ -227,6 +227,7 @@ jobs:
           cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           
           cd ./KernelSU
+          echo "==== Patching 10_enable_susfs_for_ksu ===="
           patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch
           
           echo "==== Searching SUSFS ===="
@@ -245,10 +246,11 @@ jobs:
           echo "正在打隐藏应用补丁"
           patch -p1 -F 3 < 69_hide_stuff.patch
 
-      - name: Patching bugs
+      - name: Apply manual hooks v1.6
+        if: env.ENABLE_MANUAL_HOOK == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          sed -i 's/LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid)$/LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid),/' drivers/kernelsu/lsm_hook.c
+          patch -p1 --verbose < ../patches/manual_hooks.patch || { echo "Patch failed!"; exit 1; }
 
       - name: Add Configuration for SukiSU
         run: |
@@ -258,14 +260,17 @@ jobs:
           # SukiSU Ultra config
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_SUSFS=n" >> "$CONFIG_FILE"
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           
-          if [ ${{ env.ADD_KPM_CONFIG }} = true ]; then
+          if [ ${{ env.ENABLE_KPM }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
             sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
           
-          if [ ${{ env.APPLY_SUSFS_PATCH }} = true ]; then
+          if [ ${{ env.ENABLE_MANUAL_HOOK }} = true ] && [ ${{ env.APPLY_SUSFS_PATCH }} != true ]; then
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
+          fi
+          
+          if [ ${{ env.APPLY_SUSFS_PATCH }} = true ] && [ ${{ env.ENABLE_MANUAL_HOOK }} != true ]; then
             # SUSFS config
             echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$CONFIG_FILE"
@@ -282,6 +287,12 @@ jobs:
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
+          
+            if grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/core_hook.c" >/dev/null 2>&1 || grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/supercalls.c" >/dev/null 2>&1; then
+              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$CONFIG_FILE"
+              echo "[+] Detected SUS_MAP."
+            fi
           fi
           
           if [ ${{ env.DISABLE-LTO }} = true ]; then
@@ -294,49 +305,12 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
 
-      - name: Handle sukisu nongki issue
-        if: env.APPLY_SUCOMPAT_PATCH == 'true'
-        run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          SUCOMPATH="drivers/kernelsu/sucompat.h"
-          SUCOMPATC="drivers/kernelsu/sucompat.c"
-          
-          cat >> "$SUCOMPATC" <<'EOF'
-          
-          /* ===== Backport wrapper for old kernel ===== */
-          int ksu_handle_devpts(struct inode *inode)
-          {
-              if (!inode)
-                  return 0;
-              return __ksu_handle_devpts(inode);
-          }
-          EXPORT_SYMBOL(ksu_handle_devpts);
-          /* ===== End of backport wrapper ===== */
-          
-          EOF
-              echo "sucompat added"
-          
-          if ! grep -q "extern int __ksu_handle_devpts(" "$SUCOMPATH"; then
-              cat >> "$SUCOMPATH" << 'EOF'
-          
-          /* ===== Added for devpts support (KernelSU) ===== */
-          extern int __ksu_handle_devpts(struct inode *inode);
-          extern int ksu_handle_devpts(struct inode *inode);
-          /* ===== End devpts support ===== */
-          EOF
-          fi
-          
-          grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.c
-          grep -n "ksu_handle_devpts" drivers/kernelsu/sucompat.h
-
       - name: Check defconfig before build
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
           echo "=== Checking defconfig file: $CONFIG_FILE ==="
-          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
-          echo "=== Full defconfig content ==="
-          cat "$CONFIG_FILE"   
+          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true  
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
@@ -457,6 +431,31 @@ jobs:
         with:
           name: AnyKernel3${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}-${{ env.DEVICE }}-${{ env.BUILD_TIME }}
           path: kernel_workspace/AnyKernel3/*
+
+      - name: KPM Configuration
+        if: env.ENABLE_KPM == 'true'
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel/out/arch/arm64/boot
+          pwd
+
+          if [[ -d "KernelSU/kernel/kpm" ]]; then
+            if [ -f "include/linux/set_memory.h" ]; then
+              echo "CONFIG_KPM=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+              curl -L "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+              if [[ -f patch ]]; then
+                chmod +x patch
+                echo "Running patch..."
+                ./patch
+                echo "KPM applied successfully!"
+              else
+                echo "ERROR: patch_linux failed to download!"
+                exit 1
+              fi
+            else
+              echo "Need to backport set_memory from 4.19"
+              exit 1
+            fi
+          fi
 
       - name: Upload DTBO image
         if: env.CHECK_DTBO_IS_OK == 'true'
