@@ -250,7 +250,7 @@ jobs:
         if: env.ENABLE_MANUAL_HOOK == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          patch -p1 --verbose < ../patches/manual_hooks.patch || { echo "Patch failed!"; exit 1; }
+          patch -p1 --verbose < $GITHUB_WORKSPACE/patches/manual_hooks.patch || { echo "Patch failed!"; exit 1; }
 
       - name: Add Configuration for SukiSU
         run: |
