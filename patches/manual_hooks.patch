@@ -34,7 +34,6 @@
 #endif
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
-
 @@ -1973,6 +1973,5 @@ static int compat_do_execve(struct filename *filename,
  #ifdef CONFIG_KSU
 -    if (!ksu_execveat_hook)
