@@ -35,11 +35,8 @@
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
 
-@@ -1971,10 +1971,9 @@ static int compat_do_execve(struct filename *filename,
- 		.is_compat = true,
- 		.ptr.compat = __envp,
- 	};
-#ifdef CONFIG_KSU
+@@ -1973,6 +1973,5 @@ static int compat_do_execve(struct filename *filename,
+ #ifdef CONFIG_KSU
 -    if (!ksu_execveat_hook)
 -       ksu_handle_execveat_sucompat((int *)AT_FDCWD, &filename, NULL, NULL, NULL); /* 32-bit support */
 +	 ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
