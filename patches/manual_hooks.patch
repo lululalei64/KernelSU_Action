@@ -1,14 +1,21 @@
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1886,12 +1886,26 @@ static int do_execveat_common(int fd, struct filename *filename,
- 	return retval;
+@@ -1919,29 +1919,25 @@ int do_execve_file(struct file *file, void *__argv, void *__envp)
+ {
+ 	struct user_arg_ptr argv = { .ptr.native = __argv };
+    struct user_arg_ptr envp = { .ptr.native = __envp };
+
+    return __do_execve_file(AT_FDCWD, NULL, argv, envp, 0, file);
  }
 
-+#ifdef CONFIG_KSU
+#ifdef CONFIG_KSU
+-extern bool ksu_execveat_hook __read_mostly;
 +__attribute__((hot))
-+extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
-+				void *argv, void *envp, int *flags);
-+#endif
+extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr,
+				void *argv, void *envp, int *flags);
+-extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
+-										 void *argv, void *envp, int *flags);
+#endif
 +
  int do_execve(struct filename *filename,
  	const char __user *const __user *__argv,
@@ -16,42 +23,40 @@
  {
  	struct user_arg_ptr argv = { .ptr.native = __argv };
  	struct user_arg_ptr envp = { .ptr.native = __envp };
-+#ifdef CONFIG_KSU
+#ifdef CONFIG_KSU
+-   if (unlikely(ksu_execveat_hook))
+-        ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
 +	ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
-+#endif
+-   else
+-		ksu_handle_execveat_sucompat((int *)AT_FDCWD, &filename, NULL, NULL, NULL);
+#endif
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
 
-@@ -1919,6 +1933,10 @@ static int compat_do_execve(struct filename *filename,
+@@ -1969,10 +1969,9 @@ struct user_arg_ptr envp = {
  		.is_compat = true,
  		.ptr.compat = __envp,
  	};
-+#ifdef CONFIG_KSU // 32-bit ksud and 32-on-64 support
-+	ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
-+#endif
+#ifdef CONFIG_KSU
+-    if (!ksu_execveat_hook)
+-       ksu_handle_execveat_sucompat((int *)AT_FDCWD, &filename, NULL, NULL, NULL); /* 32-bit support */
++	 ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
+#endif
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
 
 
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -450,8 +450,16 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
+@@ -454,8 +454,9 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
  	return res;
  }
 
-+#ifdef CONFIG_KSU
+#ifdef CONFIG_KSU
 +__attribute__((hot))
-+extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
-+				int *mode, int *flags);
-+#endif
-+
- SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- {
-+#ifdef CONFIG_KSU
-+	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
-+#endif
- 	return do_faccessat(dfd, filename, mode);
- }
+extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
+				int *mode, int *flags);
+#endif
 
 --- a/fs/stat.c
 +++ b/fs/stat.c
@@ -59,39 +64,19 @@
  	return cp_new_stat(&stat, statbuf);
  }
 
-+#ifdef CONFIG_KSU
+#ifdef CONFIG_KSU
 +__attribute__((hot))
-+extern int ksu_handle_stat(int *dfd, const char __user **filename_user,
-+				int *flags);
-+#endif
+extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
+#endif
 +
  #if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)
  SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
  		struct stat __user *, statbuf, int, flag)
-@@ -360,6 +364,9 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
- 	struct kstat stat;
- 	int error;
 
-+#ifdef CONFIG_KSU
-+	ksu_handle_stat(&dfd, &filename, &flag);
-+#endif
- 	error = vfs_fstatat(dfd, filename, &stat, flag);
- 	if (error)
- 		return error;
-@@ -504,6 +511,9 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
- 	struct kstat stat;
- 	int error;
-
-+#ifdef CONFIG_KSU // 32-bit su
-+	ksu_handle_stat(&dfd, &filename, &flag);
-+#endif
- 	error = vfs_fstatat(dfd, filename, &stat, flag);
- 	if (error)
- 		return error;
 
 --- a/kernel/reboot.c
 +++ b/kernel/reboot.c
-@@ -277,6 +277,11 @@ static DEFINE_MUTEX(reboot_mutex);
+@@ -310,6 +310,11 @@ static DEFINE_MUTEX(reboot_mutex);
   *
   * reboot doesn't sync: do that yourself before calling this.
   */
@@ -103,7 +88,7 @@
  SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
  		void __user *, arg)
  {
-@@ -284,6 +289,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+@@ -317,6 +317,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
  	char buffer[256];
  	int ret = 0;
 
@@ -116,48 +101,30 @@
 
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
-@@ -586,8 +586,18 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
+@@ -594,8 +594,18 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
  	return ret;
  }
 
-+#ifdef CONFIG_KSU
-+extern bool ksu_vfs_read_hook __read_mostly;
+#ifdef CONFIG_KSU
+extern bool ksu_vfs_read_hook __read_mostly;
+-extern int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
+-			    size_t *count_ptr);
 +extern __attribute__((cold)) int ksu_handle_sys_read(unsigned int fd,
 +				char __user **buf_ptr, size_t *count_ptr);
-+#endif
+#endif
 +
- SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
- {
-+#ifdef CONFIG_KSU
-+	if (unlikely(ksu_vfs_read_hook))
-+		ksu_handle_sys_read(fd, &buf, &count);
-+#endif
- 	return ksys_read(fd, buf, count);
- }
+SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 
 
 --- a/drivers/input/input.c
 +++ b/drivers/input/input.c
-@@ -436,11 +436,22 @@ static void input_handle_event(struct input_dev *dev,
+@@ -444,11 +444,22 @@ static void input_handle_event(struct input_dev *dev,
   * to 'seed' initial state of a switch or initial position of absolute
   * axis, etc.
   */
-+#ifdef CONFIG_KSU
-+extern bool ksu_input_hook __read_mostly;
+#ifdef CONFIG_KSU
+extern bool ksu_input_hook __read_mostly;
+-extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
 +extern __attribute__((cold)) int ksu_handle_input_handle_event(
 +			unsigned int *type, unsigned int *code, int *value);
-+#endif
-+
- void input_event(struct input_dev *dev,
- 		 unsigned int type, unsigned int code, int value)
- {
- 	unsigned long flags;
-
-+#ifdef CONFIG_KSU
-+	if (unlikely(ksu_input_hook))
-+		ksu_handle_input_handle_event(&type, &code, &value);
-+#endif
-+
- 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
-
- 		spin_lock_irqsave(&dev->event_lock, flags);
+#endif
