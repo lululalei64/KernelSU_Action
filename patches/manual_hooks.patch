@@ -1,3 +1,15 @@
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -454,8 +454,9 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
+ 	return res;
+ }
+
+#ifdef CONFIG_KSU
++__attribute__((hot))
+extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
+				int *mode, int *flags);
+#endif
+
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -1919,29 +1919,25 @@ int do_execve_file(struct file *file, void *__argv, void *__envp)
@@ -35,12 +47,10 @@
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1961,11 +1961,10 @@ static int compat_do_execve(struct filename *filename,
-        .is_compat = true,
-        .ptr.compat = __envp,
-    };
+@@ -1961,10 +1961,9 @@ static int compat_do_execve(struct filename *filename,
+ 		.is_compat = true,
+ 		.ptr.compat = __envp,
+ 	};
  #ifdef CONFIG_KSU
 -    if (!ksu_execveat_hook)
 -       ksu_handle_execveat_sucompat((int *)AT_FDCWD, &filename, NULL, NULL, NULL); /* 32-bit support */
@@ -48,18 +58,6 @@
  #endif
  	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
  }
-
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -454,8 +454,9 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
- 	return res;
- }
-
-#ifdef CONFIG_KSU
-+__attribute__((hot))
-extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
-				int *mode, int *flags);
-#endif
 
 --- a/fs/stat.c
 +++ b/fs/stat.c

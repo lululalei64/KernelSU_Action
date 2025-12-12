@@ -253,7 +253,7 @@ jobs:
           echo "Check line number"
           grep -n "static int compat_do_execve" fs/exec.c
           nl -ba $GITHUB_WORKSPACE/patches/manual_hooks.patch | sed -n '1,120p'
-          patch -p1 -F 10 -l < $GITHUB_WORKSPACE/patches/manual_hooks.patch || { echo "Patch failed!"; exit 1; }
+          patch -p1 -F 20 -l < $GITHUB_WORKSPACE/patches/manual_hooks.patch || { echo "Patch failed!"; exit 1; }
 
       - name: Add Configuration for SukiSU
         run: |
