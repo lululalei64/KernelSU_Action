@@ -4,6 +4,7 @@ on:
     branches:
       - "sukisu_susfs"
       - "sukisu"
+      - "sukisu-A045FXXSCEYJ2"
   workflow_dispatch:
 
 jobs:
