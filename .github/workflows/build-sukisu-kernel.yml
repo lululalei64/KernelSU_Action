@@ -184,12 +184,13 @@ jobs:
       - name: Download kernel source
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          wget -O kernel.zip "${{ env.KERNEL_SOURCE }}/archive/refs/heads/${{ env.KERNEL_SOURCE_BRANCH }}.zip"
-          unzip kernel.zip
-          SRC_DIR=$(find . -maxdepth 1 -type d ! -name "." | grep -v "kernel_workspace" | head -n 1)
-          mkdir android-kernel
-          mv "$SRC_DIR"/* android-kernel/
-          rm -rf "$SRC_DIR"
+          git clone --depth=1 ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel
+          if [ -d "android-kernel/drivers" ]; then
+              echo "内核源码下载成功且目录结构正确"
+          else
+              echo "错误：找不到 drivers 目录，请检查仓库地址或分支"
+              exit 1
+          fi
 
       - name: Download source boot image
         if: env.BUILD_BOOT_IMG == 'true'
@@ -216,7 +217,7 @@ jobs:
         if: env.APPLY_SUSFS_PATCH == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          git clone https://gitlab.com/lululalei64/susfs4ksu.git -b kernel-4.19-dev
+          git clone https://gitlab.com/lululalei64/susfs4ksu.git -b kernel-4.19
           
           cd android-kernel
           echo "正在给内核打susfs补丁"
@@ -260,11 +261,11 @@ jobs:
             sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
           
-          if [ ${{ env.ENABLE_MANUAL_HOOK }} = true ] && [ ${{ env.APPLY_SUSFS_PATCH }} != true ]; then
+          if [ ${{ env.ENABLE_MANUAL_HOOK }} = true ] || [ ${{ env.APPLY_SUSFS_PATCH }} = true ]; then
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           fi
           
-          if [ ${{ env.APPLY_SUSFS_PATCH }} = true ] && [ ${{ env.ENABLE_MANUAL_HOOK }} != true ]; then
+          if [ ${{ env.APPLY_SUSFS_PATCH }} = true ]; then
             # SUSFS config
             echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$CONFIG_FILE"
