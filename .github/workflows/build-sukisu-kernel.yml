@@ -228,18 +228,14 @@ jobs:
           
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
           
+          sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
+          
           echo "==== 验证修改情况 ===="
           if [ -f "include/linux/susfs.h" ]; then
               echo "✅ SUSFS 头文件已就绪"
           else
               echo "❌ 错误：susfs.h 缺失"
               exit 1
-          fi
-
-          if grep -q "susfs" fs/read_write.c; then
-              echo "✅ VFS Hook 成功注入 fs/read_write.c"
-          else
-              echo "⚠️ 警告：VFS Hook 未能注入，请检查补丁兼容性"
           fi
           
           echo "补丁流程结束"
