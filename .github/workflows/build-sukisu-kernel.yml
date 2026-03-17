@@ -224,28 +224,15 @@ jobs:
           
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
-          
-          cd ./KernelSU
-          echo "==== Patching 10_enable_susfs_for_ksu ===="
-          patch -p1 -F 3 < 10_enable_susfs_for_ksu.patch
-          
-          echo "==== Searching SUSFS ===="
-          find . -iname "*susfs*" -exec readlink -f {} \; || echo "No SUSFS found!"
-          echo "========================="
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/          
           
           cd ..
           patch -p1 < 50_add_susfs_in_kernel-4.19.patch
+          
+          ls -l include/linux/susfs.h || echo "警告：susfs.h 丢失"
+          grep -q "susfs" fs/read_write.c && echo "VFS Hook 注入成功" || echo "警告：VFS Hook 未注入"
+          
           echo "完成"
-
-      - name: Apply Hide Stuff Patches
-        if: env.APPLY_SUSFS_PATCH == 'true'
-        run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          cp ../SukiSU_patch/69_hide_stuff.patch ./
-          echo "正在打隐藏应用补丁"
-          patch -p1 -F 3 < 69_hide_stuff.patch
 
       - name: Add Configuration for SukiSU
         run: |
@@ -254,7 +241,6 @@ jobs:
           
           # SukiSU Ultra config
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
-          echo "CONFIG_KSU_SUSFS=n" >> "$CONFIG_FILE"
           
           if [ ${{ env.ENABLE_KPM }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
@@ -282,7 +268,6 @@ jobs:
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
-            echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
           
             if grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/core_hook.c" >/dev/null 2>&1 || grep -q "CMD_SUSFS_ADD_SUS_MAP" "drivers/kernelsu/supercalls.c" >/dev/null 2>&1; then
               echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$CONFIG_FILE"
