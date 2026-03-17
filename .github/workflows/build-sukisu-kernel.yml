@@ -226,13 +226,23 @@ jobs:
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/          
           
-          cd ..
-          patch -p1 < 50_add_susfs_in_kernel-4.19.patch
+          patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
           
-          ls -l include/linux/susfs.h || echo "警告：susfs.h 丢失"
-          grep -q "susfs" fs/read_write.c && echo "VFS Hook 注入成功" || echo "警告：VFS Hook 未注入"
+          echo "==== 验证修改情况 ===="
+          if [ -f "include/linux/susfs.h" ]; then
+              echo "✅ SUSFS 头文件已就绪"
+          else
+              echo "❌ 错误：susfs.h 缺失"
+              exit 1
+          fi
+
+          if grep -q "susfs" fs/read_write.c; then
+              echo "✅ VFS Hook 成功注入 fs/read_write.c"
+          else
+              echo "⚠️ 警告：VFS Hook 未能注入，请检查补丁兼容性"
+          fi
           
-          echo "完成"
+          echo "补丁流程结束"
 
       - name: Add Configuration for SukiSU
         run: |
