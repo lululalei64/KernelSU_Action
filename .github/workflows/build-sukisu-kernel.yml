@@ -291,6 +291,16 @@ jobs:
             echo "CONFIG_CC_WERROR=n" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
 
+      - name: Patch ksu.c for 4.19 Kernel
+        run: |
+          KSU_C_FILE=$(find . -name "ksu.c" | grep "drivers/kernelsu/ksu.c")
+          echo "Found ksu.c at: $KSU_C_FILE"
+          
+          sed -i '/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/i #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)' $KSU_C_FILE
+          sed -i '/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/a #endif' $KSU_C_FILE
+          
+          echo "✅ ksu.c 宏定义修复完成"
+
       - name: Check defconfig before build
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
