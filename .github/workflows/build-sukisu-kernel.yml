@@ -293,7 +293,6 @@ jobs:
 
       - name: Patch ksu.c for 4.19 Kernel
         run: |
-          KSU_C_FILE=$(find . -name "ksu.c" | grep "drivers/kernelsu/ksu.c")
           TARGET_FILES=$(grep -rl "VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver" drivers/kernelsu/)
           
           if [ -z "$TARGET_FILES" ]; then
