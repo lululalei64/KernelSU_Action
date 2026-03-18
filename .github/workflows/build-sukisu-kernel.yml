@@ -297,6 +297,9 @@ jobs:
           
           KSU_DIR="drivers/kernelsu"
           
+          echo "修复 TWA_RESUME..."
+          grep -rl "TWA_RESUME" $KSU_DIR | xargs sed -i 's/TWA_RESUME/true/g'
+          
           echo "修复 VFS 命名空间导入..."
           TARGET_VFS_FILES=$(grep -rl "VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver" $KSU_DIR || true)
           if [ ! -z "$TARGET_VFS_FILES" ]; then
