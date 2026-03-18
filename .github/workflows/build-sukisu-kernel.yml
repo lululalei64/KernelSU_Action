@@ -206,7 +206,7 @@ jobs:
         if: env.ENABLE_SUKISU == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s ${{ env.SUKISU_TAG }}
+          curl -LSs "https://raw.githubusercontent.com/lululalei64/SukiSU-Ultra/main/kernel/setup.sh" | bash -s ${{ env.SUKISU_TAG }}
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
