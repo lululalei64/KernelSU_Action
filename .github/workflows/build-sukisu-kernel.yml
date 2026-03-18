@@ -294,6 +294,9 @@ jobs:
       - name: Patch ksu.c for 4.19 Kernel
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          
+          grep -rl "TWA_RESUME" drivers/kernelsu/ | xargs sed -i 's/TWA_RESUME/true/g'
+          
           TARGET_FILES=$(grep -rl "VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver" drivers/kernelsu/)
           
           if [ -z "$TARGET_FILES" ]; then
@@ -331,6 +334,8 @@ jobs:
           export KBUILD_BUILD_USER=android
           export KBUILD_BUILD_HOST=aosp
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/bin:$PATH
+          
+          EXTRA_KCFLAGS="-DTWA_RESUME=true"
           make -j4 CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
           if [ ${{ env.ENABLE_CCACHE }} = true ]; then
               make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
