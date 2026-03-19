@@ -233,7 +233,9 @@ jobs:
           echo "正在应用 KSU-SUSFS 联动补丁..."
           cd KernelSU
           echo "2.当前绝对路径: $(pwd)"
-          patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
+          patch -p1 --forward --batch --silent < 10_enable_susfs_for_ksu.patch
+          
+          cd ..
           
           sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
           
