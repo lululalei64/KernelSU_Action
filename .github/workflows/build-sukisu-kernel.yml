@@ -339,6 +339,15 @@ jobs:
             echo "✅ syscall_hook_manager.c 修复完成"
           fi
           
+          PKG_OBSERVER="$KSU_DIR/pkg_observer.c"
+          if [ -f "$PKG_OBSERVER" ]; then
+            echo "正在适配 4.19 的 fsnotify API..."
+            sed -i 's/\.handle_inode_event/.handle_event/g' "$PKG_OBSERVER"
+            sed -i 's/struct fsnotify_group \*group, struct fsnotify_mark \*mark,/struct fsnotify_group *group, struct inode *dir, struct fsnotify_mark *mark,/g' "$PKG_OBSERVER"
+            sed -i 's/u32 data_type/const struct qstr *name, u32 mask, const void *data, int data_type, const unsigned char *file_name, u32 cookie/g' "$PKG_OBSERVER"
+            echo "✅ pkg_observer.c 适配完成"
+          fi
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Check defconfig before build
