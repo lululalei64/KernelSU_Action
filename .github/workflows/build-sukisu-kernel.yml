@@ -221,7 +221,9 @@ jobs:
           
           cd android-kernel
           echo "正在给内核打susfs补丁"
+          echo "1.当前绝对路径: $(pwd)"
           
+          cp ./kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/          
@@ -229,6 +231,8 @@ jobs:
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
           
           echo "正在应用 KSU-SUSFS 联动补丁..."
+          cd KernelSU
+          echo "2.当前绝对路径: $(pwd)"
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
           
           sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
