@@ -324,13 +324,14 @@ jobs:
             sed -i '/filter_count/s/^/\/\//' "$APP_PROFILE"
           fi
           
-          KP_UTIL_H="$KSU_DIR/kp_util.h"
+          echo "正在全局修复 pgtable.h 包含问题..."
+          PG_FILES=="$KSU_DIR/kp_util.c"
           
-          if [ -f "$KP_UTIL_H" ]; then
-            echo "正在修复 kp_util.h 中的 pgtable.h 包含..."
-            sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$KP_UTIL_H"
-          
-            echo "✅ kp_util.h 修复完成"
+          if [ -f "$PG_FILES" ]; then
+            echo "修复 kp_util.c..."
+              sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$file"
+          else
+            echo "⚠️ 未发 kp_util.c 文件"
           fi
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
