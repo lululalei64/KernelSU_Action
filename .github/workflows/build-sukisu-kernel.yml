@@ -294,7 +294,6 @@ jobs:
       - name: Patch ksu.c for 4.19 Kernel
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          
           KSU_DIR="drivers/kernelsu"
           
           echo "修复 TWA_RESUME..."
@@ -325,9 +324,8 @@ jobs:
           fi
           
           echo "正在全局修复 pgtable.h 包含问题..."
-          PG_FILES=="$KSU_DIR/kp_util.c"
-          
-          if [ -f "$PG_FILES" ]; then
+          KP_FILES="$KSU_DIR/kp_util.c"
+          if [ -f "$KP_FILES" ]; then
             echo "修复 kp_util.c..."
               sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$file"
           else
