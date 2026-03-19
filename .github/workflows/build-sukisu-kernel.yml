@@ -228,6 +228,9 @@ jobs:
           
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
           
+          echo "正在应用 KSU-SUSFS 联动补丁..."
+          patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
+          
           sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
           
           echo "==== 验证修改情况 ===="
@@ -355,6 +358,9 @@ jobs:
             sed -i '1i #include <linux/version.h>\n#ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' "$MOUNT_NS_C"
             echo "✅ su_mount_ns.c 适配完成"
           fi
+          
+          echo "修复 task_struct 布局..."
+          sed -i '/void.*\*stack;/a #ifdef CONFIG_SUSFS\n\tunsigned int susfs_task_state;\n#endif' include/linux/sched.h
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
