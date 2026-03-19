@@ -296,15 +296,9 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           KSU_DIR="drivers/kernelsu"
           
-          echo "--- 调试信息 ---"
-          echo "当前绝对路径: $(pwd)"
-          echo "检查 drivers/ 目录是否存在:"
-          ls -d drivers/kernelsu || echo "❌ 找不到 drivers/kernelsu 目录"
-          
-          echo "在当前目录下搜索 kp_util.c 的实际位置:"
-          find . -name "kp_util.c"
-          echo "----------------"
-          
+          echo "--- 正在全量扫描并修复 pgtable.h 引用 ---"
+          FILES_WITH_PGTABLE=$(grep -rl "linux/pgtable.h" $KSU_DIR || true)
+
           echo "修复 TWA_RESUME..."
           grep -rl "TWA_RESUME" $KSU_DIR | xargs sed -i 's/TWA_RESUME/true/g'
           
@@ -332,13 +326,13 @@ jobs:
             sed -i '/filter_count/s/^/\/\//' "$APP_PROFILE"
           fi
           
-          echo "正在全局修复 pgtable.h 包含问题..."
-          REAL_KP_UTIL=$(find $KSU_DIR -name "kp_util.c")
-          if [ ! -z "$REAL_KP_UTIL" ]; then
-            echo "✅ 找到文件: $REAL_KP_UTIL，开始补丁..."
-            sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$REAL_KP_UTIL"
+          if [ ! -z "$FILES_WITH_PGTABLE" ]; then
+            for file in $FILES_WITH_PGTABLE; do
+              echo "修复文件: $file"
+              sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$file"
+            done
           else
-            echo "❌ 依然找不到 kp_util.c，请检查 ls 日志"
+            echo "⚠️ 奇怪：在 $KSU_DIR 中没搜到 linux/pgtable.h 字符串"
           fi
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
