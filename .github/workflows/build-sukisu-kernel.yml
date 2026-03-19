@@ -297,7 +297,16 @@ jobs:
           KSU_DIR="drivers/kernelsu"
           
           echo "--- 正在全量扫描并修复 pgtable.h 引用 ---"
-          FILES_WITH_PGTABLE=$(grep -rl "linux/pgtable.h" $KSU_DIR || true)
+          
+          if [ -f "$KSU_DIR/sucompat.c" ]; then
+            echo "正在为 sucompat.c 强制注入 KERNEL_VERSION 宏定义..."
+            sed -i '1i #ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' "$KSU_DIR/sucompat.c"
+            sed -i '1i #include <linux/version.h>' "$KSU_DIR/sucompat.c"
+            sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$KSU_DIR/sucompat.c"
+          fi
+          
+          echo "sucompat.c 的头部内容："
+          cat drivers/kernelsu/sucompat.c | head -n 40
 
           echo "修复 TWA_RESUME..."
           grep -rl "TWA_RESUME" $KSU_DIR | xargs sed -i 's/TWA_RESUME/true/g'
@@ -324,15 +333,6 @@ jobs:
           if [ -f "$APP_PROFILE" ]; then
             echo "修复 app_profile.c..."
             sed -i '/filter_count/s/^/\/\//' "$APP_PROFILE"
-          fi
-          
-          if [ ! -z "$FILES_WITH_PGTABLE" ]; then
-            for file in $FILES_WITH_PGTABLE; do
-              echo "修复文件: $file"
-              sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' "$file"
-            done
-          else
-            echo "⚠️ 奇怪：在 $KSU_DIR 中没搜到 linux/pgtable.h 字符串"
           fi
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
