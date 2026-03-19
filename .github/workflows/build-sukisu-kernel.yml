@@ -348,6 +348,14 @@ jobs:
             echo "✅ pkg_observer.c 适配完成"
           fi
           
+          MOUNT_NS_C="$KSU_DIR/su_mount_ns.c"
+          if [ -f "$MOUNT_NS_C" ]; then
+            echo "正在修复 su_mount_ns.c 中的 mount.h 路径..."
+            sed -i 's/#include <uapi\/linux\/mount.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)\n#include <uapi\/linux\/mount.h>\n#else\n#include <linux\/mount.h>\n#endif/g' "$MOUNT_NS_C"
+            sed -i '1i #include <linux/version.h>\n#ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' "$MOUNT_NS_C"
+            echo "✅ su_mount_ns.c 适配完成"
+          fi
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Check defconfig before build
