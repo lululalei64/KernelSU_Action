@@ -223,19 +223,11 @@ jobs:
           echo "正在给内核打susfs补丁"
           echo "1.当前绝对路径: $(pwd)"
           
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/          
           
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
-          
-          echo "正在应用 KSU-SUSFS 联动补丁..."
-          cd KernelSU
-          echo "2.当前绝对路径: $(pwd)"
-          patch -p1 --forward --batch --silent < 10_enable_susfs_for_ksu.patch
-          
-          cd ..
           
           sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
           
@@ -375,7 +367,10 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
           echo "=== Checking defconfig file: $CONFIG_FILE ==="
-          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true  
+          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
+          
+          echo "=== Checking susfs ==="
+          grep -r "susfs" $GITHUB_WORKSPACE/kernel_workspace/android-kernel/KernelSU
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
