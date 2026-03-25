@@ -355,6 +355,17 @@ jobs:
             echo "✅ su_mount_ns.c 适配完成"
           fi
           
+          echo "Current path: $(pwd)"
+          echo "导出 SELinux 核心符号..."
+          grep -q "EXPORT_SYMBOL_GPL(policy_mutex)" security/selinux/ss/services.c || echo "EXPORT_SYMBOL_GPL(policy_mutex);" >> security/selinux/ss/services.c
+          grep -q "EXPORT_SYMBOL_GPL(hashtab_duplicate)" security/selinux/ss/hashtab.c || echo "EXPORT_SYMBOL_GPL(hashtab_duplicate);" >> security/selinux/ss/hashtab.c
+          grep -q "EXPORT_SYMBOL_GPL(avtab_alloc_dup)" security/selinux/ss/avtab.c || echo "EXPORT_SYMBOL_GPL(avtab_alloc_dup);" >> security/selinux/ss/avtab.c
+      
+          if [ -f "$KSU_DIR/vfs_handler.c" ]; then
+            echo "修复 ksu_vfs_read_hook 链接..."
+            grep -q "EXPORT_SYMBOL_GPL(ksu_vfs_read_hook)" "$KSU_DIR/vfs_handler.c" || echo "EXPORT_SYMBOL_GPL(ksu_vfs_read_hook);" >> "$KSU_DIR/vfs_handler.c"
+          fi
+          
           echo "修复 task_struct 布局..."
           sed -i '/void.*\*stack;/a #ifdef CONFIG_SUSFS\n\tunsigned int susfs_task_state;\n#endif' include/linux/sched.h
           
