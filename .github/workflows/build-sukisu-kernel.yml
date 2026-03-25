@@ -354,12 +354,6 @@ jobs:
             sed -i '1i #include <linux/version.h>\n#ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' "$MOUNT_NS_C"
             echo "✅ su_mount_ns.c 适配完成"
           fi
-          
-          echo "Current path: $(pwd)"
-          echo "导出 SELinux 核心符号..."
-          grep -q "EXPORT_SYMBOL_GPL(policy_mutex)" security/selinux/ss/services.c || echo "EXPORT_SYMBOL_GPL(policy_mutex);" >> security/selinux/ss/services.c
-          grep -q "EXPORT_SYMBOL_GPL(hashtab_duplicate)" security/selinux/ss/hashtab.c || echo "EXPORT_SYMBOL_GPL(hashtab_duplicate);" >> security/selinux/ss/hashtab.c
-          grep -q "EXPORT_SYMBOL_GPL(avtab_alloc_dup)" security/selinux/ss/avtab.c || echo "EXPORT_SYMBOL_GPL(avtab_alloc_dup);" >> security/selinux/ss/avtab.c
       
           if [ -f "$KSU_DIR/vfs_handler.c" ]; then
             echo "修复 ksu_vfs_read_hook 链接..."
