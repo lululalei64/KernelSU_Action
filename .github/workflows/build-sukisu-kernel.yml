@@ -229,8 +229,6 @@ jobs:
           
           patch -p1 --forward --batch --silent < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
           
-          sed -i 's/susfs_get_enabled_features(arg)/susfs_get_enabled_features(arg, 256)/g' $GITHUB_WORKSPACE/kernel_workspace/android-kernel/drivers/kernelsu/supercalls.c
-          
           echo "==== 验证修改情况 ===="
           if [ -f "include/linux/susfs.h" ]; then
               echo "✅ SUSFS 头文件已就绪"
