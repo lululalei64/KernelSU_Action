@@ -278,6 +278,9 @@ jobs:
               echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$CONFIG_FILE"
               echo "[+] Detected SUS_MAP."
             fi
+          
+          else
+              echo "CONFIG_KSU_SYSCALL_HOOK=y" >> "$CONFIG_FILE"
           fi
           
           if [ ${{ env.DISABLE-LTO }} = true ]; then
