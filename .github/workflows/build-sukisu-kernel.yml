@@ -374,9 +374,6 @@ jobs:
           CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
           echo "=== Checking defconfig file: $CONFIG_FILE ==="
           cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true
-          
-          echo "=== Checking susfs ==="
-          grep -r "susfs" $GITHUB_WORKSPACE/kernel_workspace/android-kernel/KernelSU
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
