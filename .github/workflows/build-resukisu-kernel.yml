@@ -283,7 +283,7 @@ jobs:
           
           cp ../susfs4ksu/kernel_patches/susfs_patch_to_4.19.patch .
           
-          patch -p1 < susfs_patch_to_4.19.patch
+          patch -p1 -f < susfs_patch_to_4.19.patch
           echo "完成"
           
           echo "开始patch susfs inline"
