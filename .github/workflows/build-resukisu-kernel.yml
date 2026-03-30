@@ -276,7 +276,7 @@ jobs:
         if: env.SUSFS_ENABLE == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
-          git clone https://gitlab.com/lululalei64/susfs4ksu.git -b kernel-4.19-dev-2
+          git clone https://github.com/lululalei64/susfs4ksu.git -b kernel-4.19-dev-2
           
           cd android-kernel
           echo "正在给内核打susfs补丁"
