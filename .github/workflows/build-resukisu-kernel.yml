@@ -284,18 +284,18 @@ jobs:
           cp ../susfs4ksu/kernel_patches/susfs_patch_to_4.19.patch .
           
           patch -p1 -f < susfs_patch_to_4.19.patch
-          echo "完成"
+          echo "完成补丁"
           
           echo "开始patch susfs inline"
           bash $GITHUB_WORKSPACE/patches/susfs_inline_hook_patches.sh
           echo "[+] executed SuSFS inline hook successfully."
           
           echo "开始backport"
-          bash backport_patches.sh
+          bash $GITHUB_WORKSPACE/patches/backport_patches.sh
           echo "[+] executed backport patch successfully."
           
           echo "开始backport selinux"
-          bash backport_selinux_patches.sh
+          bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
           echo "[+] Patched SELinux."
 
       - name: Apply Hide Stuff Patches
