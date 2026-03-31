@@ -274,7 +274,11 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           CONFIG_FILE="arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}"
           echo "=== Checking defconfig file: $CONFIG_FILE ==="
-          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || true  
+          cat "$CONFIG_FILE" | grep -E "(KPM|KALLSYMS|KSU|SUFS)" || trueecho "--- KernelSU Makefile ---"
+          grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/kernel/Makefile || \
+          grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/Makefile || \
+          grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/Kbuild
+          
 
       - name: Patch SUSFS
         if: env.SUSFS_ENABLE == 'true'
