@@ -359,7 +359,7 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           sed -i 's/MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)\nMODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);\n#endif/' drivers/kernelsu/ksu.c
           grep -rl "TWA_RESUME" drivers/kernelsu/ | xargs sed -i 's/TWA_RESUME/true/g'
-          
+          sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' drivers/kernelsu/sucompat.c
           echo "End extra patching"
 
       - name: Setup ccache
