@@ -398,6 +398,8 @@ jobs:
           echo "修复 task_struct 布局..."
           sed -i '/void.*\*stack;/a #ifdef CONFIG_SUSFS\n\tunsigned int susfs_task_state;\n#endif' include/linux/sched.h
           
+          sed -i 's/force_sig(SIGKILL);/force_sig(SIGKILL, current);/g' drivers/kernelsu/setuid_hook.c
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
