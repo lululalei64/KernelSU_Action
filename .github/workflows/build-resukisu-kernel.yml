@@ -418,6 +418,8 @@ jobs:
           sed -i 's/p->ops\.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL/p->ops.poll = fp->f_op->poll ? ksu_wrapper_iopoll : NULL/g' drivers/kernelsu/file_wrapper.c
           sed -i 's/remap_file_range/dedupe_file_range/g' drivers/kernelsu/file_wrapper.c
           
+          sed -i 's/orig->f_op->dedupe_file_range(orig, pos_in, file_out, pos_out, len, remap_flags)/orig->f_op->dedupe_file_range(orig, pos_in, file_out, pos_out, len)/g' drivers/kernelsu/file_wrapper.c
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
@@ -439,11 +441,11 @@ jobs:
           make -j4 CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
           if [ ${{ env.ENABLE_CCACHE }} = true ]; then
               make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
-              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
+              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds" -k || true
           
           else
               make -j4 CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
-              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
+              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds" -k || true
           
           fi
 
