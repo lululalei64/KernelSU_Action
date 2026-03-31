@@ -291,8 +291,10 @@ jobs:
           echo "--- generated version ---"
           cat $GITHUB_WORKSPACE/kernel_workspace/android-kernel/out/include/generated/uapi/linux/version.h 2>/dev/null | head -5
           
-          echo "--- sepolicy.c line 515-535 ---"
-          sed -n '515,535p' drivers/kernelsu/selinux/sepolicy.c
+          echo "--- filename_trans block ---"
+          sed -n '510,580p' drivers/kernelsu/selinux/sepolicy.c
+          echo "--- add_type block ---"
+          sed -n '605,660p' drivers/kernelsu/selinux/sepolicy.c
 
       - name: Patch SUSFS
         if: env.SUSFS_ENABLE == 'true'
