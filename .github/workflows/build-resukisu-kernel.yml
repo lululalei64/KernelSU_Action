@@ -372,7 +372,6 @@ jobs:
             sed -i 's|"/dev/ashmem (deleted)"|"/system/framework/framework-res.apk"|' fs/proc/base.c
             echo "[+] Changed ashmem to framework-res."
           fi
-      
 
       - name: Extra patch
         run: |
@@ -439,6 +438,11 @@ jobs:
           sed -i '/db = \&policy->policydb;/{/SELINUX_POLICY_INSTEAD_SELINUX_SS/!d}' drivers/kernelsu/selinux/rules.c
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
+
+      - name: Fix sepolicy.c
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          bash $GITHUB_WORKSPACE/patches/fix_sepolicy.sh
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
