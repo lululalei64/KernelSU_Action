@@ -177,19 +177,6 @@ jobs:
             echo "GCC_32=CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/kernel_workspace/gcc-32/bin/${{ env.CUSTOM_GCC_32_BIN }}" >> $GITHUB_ENV
           fi
 
-      - name: Download tools
-        if: env.HIDE_STUFF == 'true'
-        run: |
-          cd $GITHUB_WORKSPACE/kernel_workspace
-          apt-get install pkg-config ocaml-nox ocaml-findlib autoconf libpcre3-dev python3-dev menhir libparmap-ocaml-dev libpcre-ocaml-dev -y
-          wget https://coccinelle.gitlabpages.inria.fr/website/distrib/coccinelle-1.3.tar.gz
-          tar zxf coccinelle-1.3.tar.gz
-          cd coccinelle-1.3
-          ./autogen
-          ./configure
-          make
-          make install
-
       - name: Download mkbootimg tools
         if: env.BUILD_BOOT_IMG == 'true'
         run: |
@@ -314,6 +301,7 @@ jobs:
       - name: Apply Hide Stuff Patches
         if: env.HIDE_STUFF == 'true'
         run: |
+          sudo apt-get install -y coccinelle
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           echo "正在打隐藏应用补丁"
           if grep -q "show_vma_header_prefix_fake" "fs/proc/task_mmu.c"; then
