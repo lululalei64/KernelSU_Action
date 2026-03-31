@@ -212,7 +212,12 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s ${{ env.RESUKISU_TAG }}
-          cd ./KernelSU
+          
+          echo "--- 验证 repo ---"
+          cat KernelSU/.git/config | grep url
+          ls KernelSU/kernel/
+    
+          cd KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10200)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           export KSU_VERSION=$KSU_VERSION
