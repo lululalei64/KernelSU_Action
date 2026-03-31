@@ -404,6 +404,8 @@ jobs:
           
           sed -i 's/force_sig(SIGKILL);/force_sig(SIGKILL, current);/g' drivers/kernelsu/setuid_hook.c
           
+          sed -i 's/KERNEL_SU_VERSION/KSU_VERSION/g' drivers/kernelsu/supercalls.c
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
