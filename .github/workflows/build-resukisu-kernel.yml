@@ -413,6 +413,11 @@ jobs:
           sed -i 's/\.version = KERNEL_SU_VERSION/.version = KSU_VERSION/g' drivers/kernelsu/supercalls.c
           sed -i "s/\.version = KSU_VERSION/.version = ${{ env.KSUVER }}/g" drivers/kernelsu/supercalls.c
           
+          echo "修复 file_wrapper.c"
+          sed -i 's/->f_op->iopoll(kiocb, spin)/->f_op->poll(kiocb, NULL)/g' drivers/kernelsu/file_wrapper.c
+          sed -i 's/p->ops\.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL/p->ops.poll = fp->f_op->poll ? ksu_wrapper_iopoll : NULL/g' drivers/kernelsu/file_wrapper.c
+          sed -i 's/remap_file_range/dedupe_file_range/g' drivers/kernelsu/file_wrapper.c
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
