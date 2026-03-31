@@ -284,7 +284,15 @@ jobs:
           grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/kernel/Makefile || \
           grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/Makefile || \
           grep -n "KSU_VERSION\|KERNEL_SU_VERSION" drivers/kernelsu/Kbuild
+          echo "~~~~~ Checking version ~~~~~"
+          echo "--- LINUX_VERSION_CODE check ---"
+          grep -n "LINUX_VERSION_CODE\|VERSION_CODE\|KERNELVERSION" $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/generated/uapi/linux/version.h 2>/dev/null || \
+          grep -n "LINUX_VERSION_CODE" $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux/version.h | head -5
+          echo "--- generated version ---"
+          cat $GITHUB_WORKSPACE/kernel_workspace/android-kernel/out/include/generated/uapi/linux/version.h 2>/dev/null | head -5
           
+          echo "--- rules.c content ---"
+          cat drivers/kernelsu/selinux/rules.c
 
       - name: Patch SUSFS
         if: env.SUSFS_ENABLE == 'true'
@@ -420,6 +428,9 @@ jobs:
           
           sed -i 's/orig->f_op->dedupe_file_range(orig, pos_in, file_out, pos_out, len, remap_flags)/orig->f_op->dedupe_file_range(orig, pos_in, file_out, pos_out, len)/g' drivers/kernelsu/file_wrapper.c
           
+          sed -i '1i #include <linux/version.h>' drivers/kernelsu/util.c
+          sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' drivers/kernelsu/util.c
+  
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
