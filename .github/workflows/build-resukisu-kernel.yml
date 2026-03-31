@@ -364,7 +364,41 @@ jobs:
           sed -i '1i #include <linux/version.h>' drivers/kernelsu/sucompat.c
           sed -i '2i #ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' drivers/kernelsu/sucompat.c
           sed -i 's/#include <linux\/pgtable.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)\n#include <linux\/pgtable.h>\n#else\n#include <asm\/pgtable.h>\n#endif/g' drivers/kernelsu/sucompat.c
-          echo "End extra patching"
+          
+          echo "正在修复 syscall_hook_manager.c 中的 clone3 报错..."
+          HOOK_MANAGER="drivers/kernelsu/syscall_hook_manager.c"
+          if [ -f "$HOOK_MANAGER" ]; then
+            sed -i '1i #ifndef __NR_clone3\n#define __NR_clone3 999\n#endif' "$HOOK_MANAGER"
+            sed -i '1i #include <linux/version.h>' "$HOOK_MANAGER"
+            echo "✅ syscall_hook_manager.c 修复完成"
+          fi
+          
+          PKG_OBSERVER="drivers/kernelsu/pkg_observer.c"
+          if [ -f "$PKG_OBSERVER" ]; then
+            echo "正在适配 4.19 的 fsnotify API..."
+            sed -i 's/\.handle_inode_event/.handle_event/g' "$PKG_OBSERVER"
+            sed -i 's/struct fsnotify_group \*group, struct fsnotify_mark \*mark,/struct fsnotify_group *group, struct inode *dir, struct fsnotify_mark *mark,/g' "$PKG_OBSERVER"
+            sed -i 's/u32 data_type/const struct qstr *name, u32 mask, const void *data, int data_type, const unsigned char *file_name, u32 cookie/g' "$PKG_OBSERVER"
+            echo "✅ pkg_observer.c 适配完成"
+          fi
+          
+          MOUNT_NS_C="drivers/kernelsu/su_mount_ns.c"
+          if [ -f "$MOUNT_NS_C" ]; then
+            echo "正在修复 su_mount_ns.c 中的 mount.h 路径..."
+            sed -i 's/#include <uapi\/linux\/mount.h>/#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)\n#include <uapi\/linux\/mount.h>\n#else\n#include <linux\/mount.h>\n#endif/g' "$MOUNT_NS_C"
+            sed -i '1i #include <linux/version.h>\n#ifndef KERNEL_VERSION\n#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n#endif' "$MOUNT_NS_C"
+            echo "✅ su_mount_ns.c 适配完成"
+          fi
+          
+          if [ -f "drivers/kernelsu/vfs_handler.c" ]; then
+            echo "修复 ksu_vfs_read_hook 链接..."
+            grep -q "EXPORT_SYMBOL_GPL(ksu_vfs_read_hook)" "$KSU_DIR/vfs_handler.c" || echo "EXPORT_SYMBOL_GPL(ksu_vfs_read_hook);" >> "$KSU_DIR/vfs_handler.c"
+          fi
+          
+          echo "修复 task_struct 布局..."
+          sed -i '/void.*\*stack;/a #ifdef CONFIG_SUSFS\n\tunsigned int susfs_task_state;\n#endif' include/linux/sched.h
+          
+          echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
