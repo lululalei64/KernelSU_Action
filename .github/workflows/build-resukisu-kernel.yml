@@ -437,6 +437,24 @@ jobs:
           sed -i 's/struct selinux_policy \*policy = selinux_state\.policy;/#ifdef SELINUX_POLICY_INSTEAD_SELINUX_SS\n    struct selinux_policy *policy = selinux_state.policy;\n    db = \&policy->policydb;\n#else\n    db = \&selinux_state.ss->policydb;\n#endif/' drivers/kernelsu/selinux/rules.c
           sed -i '/db = \&policy->policydb;/{/SELINUX_POLICY_INSTEAD_SELINUX_SS/!d}' drivers/kernelsu/selinux/rules.c
           
+          echo fix "strncpy"
+          sed -i 's/strncpy_from_unsafe_user/strncpy_from_unsafe/g' kernel/trace/bpf_trace.c
+          
+          echo "--- checking hooks ---"
+          grep -n "ksu_vfs_read_hook" fs/read_write.c | head -5
+          grep -n "ksu_execveat_hook" fs/exec.c | head -5
+          
+          echo "--- checking ksu hooks in read_write.c ---"
+          grep -n "ksu_vfs_read_hook\|ksu_execveat_hook" fs/read_write.c fs/exec.c | head -10
+          
+          sed -i 's/mmap_read_trylock(\(.*\))/down_read_trylock(\&(\1)->mmap_sem)/g' drivers/kernelsu/util.c
+          sed -i 's/mmap_read_unlock(\(.*\))/up_read(\&(\1)->mmap_sem)/g' drivers/kernelsu/util.c
+          
+          sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
+          sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/dynamic_manager.c
+          
+          sed -i 's/anon_inode_getfd_secure/anon_inode_getfd/g' drivers/kernelsu/supercalls.c
+          
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Fix sepolicy.c
