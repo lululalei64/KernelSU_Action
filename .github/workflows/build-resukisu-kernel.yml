@@ -227,18 +227,15 @@ jobs:
           # Neccssary
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "# CONFIG_KPROBES is not set" >> "$CONFIG_FILE"
-          echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_MANUAL_SU=y" >> "$CONFIG_FILE"
           
-          if [ ${{ env.ENABLE_KPM }} = true ]; then
+          if [ ${{ env.ENABLE_KPM }} == true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
             sed -i 's/# CONFIG_KALLSYMS_ALL is not set/CONFIG_KALLSYMS_ALL=y/g' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
           fi
           
           if [ ${{ env.SUSFS_ENABLE }} == true ]; then
             echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
-            echo "CONFIG_KSU_NONE_HOOK=y" >> "$CONFIG_FILE"
-          
           else
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
           fi
