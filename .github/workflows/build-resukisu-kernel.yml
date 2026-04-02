@@ -313,6 +313,10 @@ jobs:
           echo "开始backport selinux"
           bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
           echo "[+] Patched SELinux."
+          
+          if grep -q "strncpy_from_unsafe_user" "kernel/trace/bpf_trace.c"; then
+            sed -i 's/strncpy_from_unsafe_user/strncpy_from_unsafe/g' kernel/trace/bpf_trace.c
+          fi
 
       - name: Apply Hide Stuff Patches
         if: env.HIDE_STUFF == 'true'
