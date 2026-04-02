@@ -440,7 +440,7 @@ jobs:
           sed -i 's/mmap_read_trylock(mm)/down_read_trylock(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
           sed -i 's/mmap_read_unlock(mm)/up_read(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
           echo "Check mmap_read"
-          grep -n "mmap_read" drivers/kernelsu/util.c
+          sed -n '25,80p' drivers/kernelsu/util.c
           
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/dynamic_manager.c
