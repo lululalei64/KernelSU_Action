@@ -228,6 +228,7 @@ jobs:
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "# CONFIG_KPROBES is not set" >> "$CONFIG_FILE"
           echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_MANUAL_SU=y" >> "$CONFIG_FILE"
           
           if [ ${{ env.ENABLE_KPM }} = true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
@@ -236,7 +237,7 @@ jobs:
           
           if [ ${{ env.SUSFS_ENABLE }} == true ]; then
             echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
-            echo "CONFIG_KSU_SYSCALL_HOOK=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_NONE_HOOK=y" >> "$CONFIG_FILE"
           
           else
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
@@ -259,14 +260,7 @@ jobs:
               echo "CONFIG_THREAD_INFO_IN_TASK=y" >> "$CONFIG_FILE"
             fi
           fi
-          
-          sed -i '/ccflags-y += -DKSU_TP_HOOK/d' drivers/kernelsu/Kbuild
-          sed -i '/ccflags-y += -DKSU_KPROBES_HOOK/d' drivers/kernelsu/Kbuild
-          echo 'ccflags-y += -DKSU_SYSCALL_HOOK' >> drivers/kernelsu/Kbuild
-          
-          echo "--- verify Kbuild hook ---"
-          grep "HOOK" drivers/kernelsu/Kbuild
-          
+            
           if [ ${{ env.DISABLE-LTO }} = true ]; then
             sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             sed -i 's/CONFIG_LTO_CLANG=y/CONFIG_LTO_CLANG=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
@@ -446,7 +440,6 @@ jobs:
           
           sed -i 's/mmap_read_trylock(mm)/down_read_trylock(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
           sed -i 's/mmap_read_unlock(mm)/up_read(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
-          echo "Check mmap_read"
           
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/dynamic_manager.c
@@ -460,19 +453,12 @@ jobs:
           grep -rn "ksu_vfs_read_hook\|ksu_execveat_hook\|ksu_handle_execveat\|ksu_handle_devpts\|ksu_input_hook" drivers/kernelsu/ | grep -v "extern" | head -20
           
           sed -n '398,408p' drivers/kernelsu/supercalls.c
-          
-          echo "--- Kbuild content ---"
-          cat drivers/kernelsu/Kbuild
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Fix sepolicy.c
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          echo "--- before fix ---"
-          sed -n '524,530p' drivers/kernelsu/selinux/sepolicy.c
           bash $GITHUB_WORKSPACE/patches/fix_sepolicy.sh
-          echo "--- after fix ---"
-          sed -n '524,530p' drivers/kernelsu/selinux/sepolicy.c
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
