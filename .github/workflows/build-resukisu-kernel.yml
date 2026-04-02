@@ -440,7 +440,6 @@ jobs:
           sed -i 's/mmap_read_trylock(mm)/down_read_trylock(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
           sed -i 's/mmap_read_unlock(mm)/up_read(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
           echo "Check mmap_read"
-          sed -n '25,80p' drivers/kernelsu/util.c
           
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/dynamic_manager.c
@@ -448,7 +447,15 @@ jobs:
           sed -i 's/anon_inode_getfd_secure/anon_inode_getfd/g' drivers/kernelsu/supercalls.c
           
           sed -i 's/getfd_secure("\[ksu_fdwrapper\]", &data->ops, data, f->f_flags, NULL)/anon_inode_getfd("[ksu_fdwrapper]", \&data->ops, data, f->f_flags)/g' drivers/kernelsu/supercalls.c
+          grep -rl "put_task_struct" drivers/kernelsu/ | xargs sed -i '1i #include <linux/sched/task.h>'
           
+          echo "--- hook definitions in kernelsu ---"
+          grep -rn "ksu_vfs_read_hook\|ksu_execveat_hook\|ksu_handle_execveat\|ksu_handle_devpts\|ksu_input_hook" drivers/kernelsu/ | grep -v "extern" | head -20
+          
+          sed -n '398,408p' drivers/kernelsu/supercalls.c
+          
+          echo "--- Kbuild content ---"
+          cat drivers/kernelsu/Kbuild
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
       - name: Fix sepolicy.c
