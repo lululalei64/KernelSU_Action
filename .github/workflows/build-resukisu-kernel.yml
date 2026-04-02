@@ -236,7 +236,7 @@ jobs:
           
           if [ ${{ env.SUSFS_ENABLE }} == true ]; then
             echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
-            echo "CONFIG_KSU_NONE_HOOK=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_SYSCALL_HOOK=y" >> "$CONFIG_FILE"
           
           else
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
@@ -259,6 +259,13 @@ jobs:
               echo "CONFIG_THREAD_INFO_IN_TASK=y" >> "$CONFIG_FILE"
             fi
           fi
+          
+          sed -i '/ccflags-y += -DKSU_TP_HOOK/d' drivers/kernelsu/Kbuild
+          sed -i '/ccflags-y += -DKSU_KPROBES_HOOK/d' drivers/kernelsu/Kbuild
+          echo 'ccflags-y += -DKSU_SYSCALL_HOOK' >> drivers/kernelsu/Kbuild
+          
+          echo "--- verify Kbuild hook ---"
+          grep "HOOK" drivers/kernelsu/Kbuild
           
           if [ ${{ env.DISABLE-LTO }} = true ]; then
             sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
