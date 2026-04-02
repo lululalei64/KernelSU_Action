@@ -236,7 +236,7 @@ jobs:
           fi
           
           if [ ${{ env.SUSFS_ENABLE }} == true ]; then
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_NONE_HOOK=y" >> "$CONFIG_FILE"
           
           else
@@ -304,6 +304,10 @@ jobs:
           echo "开始patch susfs inline"
           bash $GITHUB_WORKSPACE/patches/susfs_inline_hook_patches.sh
           echo "[+] executed SuSFS inline hook successfully."
+          
+          echo "开始patch syscall hook"
+          bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
+          echo "[+] executed syscall hook successfully."
           
           echo "开始backport"
           bash $GITHUB_WORKSPACE/patches/backport_patches.sh
