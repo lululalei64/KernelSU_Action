@@ -442,7 +442,11 @@ jobs:
       - name: Fix sepolicy.c
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          echo "--- before fix ---"
+          sed -n '524,530p' drivers/kernelsu/selinux/sepolicy.c
           bash $GITHUB_WORKSPACE/patches/fix_sepolicy.sh
+          echo "--- after fix ---"
+          sed -n '524,530p' drivers/kernelsu/selinux/sepolicy.c
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
