@@ -212,11 +212,6 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s ${{ env.RESUKISU_TAG }}
-          
-          echo "--- 验证 repo ---"
-          cat KernelSU/.git/config | grep url
-          echo "--- supercalls.c line 85-95 ---"
-          sed -n '85,95p' KernelSU/kernel/supercalls.c
     
           cd KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 10200)
@@ -290,11 +285,6 @@ jobs:
           grep -n "LINUX_VERSION_CODE" $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux/version.h | head -5
           echo "--- generated version ---"
           cat $GITHUB_WORKSPACE/kernel_workspace/android-kernel/out/include/generated/uapi/linux/version.h 2>/dev/null | head -5
-          
-          echo "--- filename_trans block ---"
-          sed -n '510,580p' drivers/kernelsu/selinux/sepolicy.c
-          echo "--- add_type block ---"
-          sed -n '605,660p' drivers/kernelsu/selinux/sepolicy.c
 
       - name: Patch SUSFS
         if: env.SUSFS_ENABLE == 'true'
@@ -447,13 +437,17 @@ jobs:
           echo "--- checking ksu hooks in read_write.c ---"
           grep -n "ksu_vfs_read_hook\|ksu_execveat_hook" fs/read_write.c fs/exec.c | head -10
           
-          sed -i 's/mmap_read_trylock(\(.*\))/down_read_trylock(\&(\1)->mmap_sem)/g' drivers/kernelsu/util.c
-          sed -i 's/mmap_read_unlock(\(.*\))/up_read(\&(\1)->mmap_sem)/g' drivers/kernelsu/util.c
+          sed -i 's/mmap_read_trylock(mm)/down_read_trylock(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
+          sed -i 's/mmap_read_unlock(mm)/up_read(\&mm->mmap_sem)/g' drivers/kernelsu/util.c
+          echo "Check mmap_read"
+          grep -n "mmap_read" drivers/kernelsu/util.c
           
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
           sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/dynamic_manager.c
           
           sed -i 's/anon_inode_getfd_secure/anon_inode_getfd/g' drivers/kernelsu/supercalls.c
+          
+          sed -i 's/getfd_secure("\[ksu_fdwrapper\]", &data->ops, data, f->f_flags, NULL)/anon_inode_getfd("[ksu_fdwrapper]", \&data->ops, data, f->f_flags)/g' drivers/kernelsu/supercalls.c
           
           echo "✅ 所有 4.19 兼容性补丁已应用完成"
 
@@ -485,11 +479,11 @@ jobs:
           make -j4 CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
           if [ ${{ env.ENABLE_CCACHE }} = true ]; then
               make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
-              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds" -k || true
+              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
           
           else
               make -j4 CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} \
-              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds" -k || true
+              KCFLAGS="-w -Wno-error -Wno-error=format -Wno-error=gnu-variable-sized-type-not-at-end -Wno-error=pointer-to-int-cast -Wno-error=address-of-packed-member -Wno-error=stringop-truncation -Wno-error=misleading-indentation -Wno-error=array-bounds"
           
           fi
 
