@@ -292,10 +292,6 @@ jobs:
           echo "开始patch susfs inline"
           bash $GITHUB_WORKSPACE/patches/susfs_inline_hook_patches.sh
           echo "[+] executed SuSFS inline hook successfully."
-          
-          if grep -q "strncpy_from_unsafe_user" "kernel/trace/bpf_trace.c"; then
-            sed -i 's/strncpy_from_unsafe_user/strncpy_from_unsafe/g' kernel/trace/bpf_trace.c
-          fi
 
       - name: Necessary Patch
         run: |
@@ -312,6 +308,20 @@ jobs:
           echo "开始backport selinux"
           bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
           echo "[+] Patched SELinux."
+          
+          echo "======== BEFORE PATCH ========"
+          cat drivers/kernelsu/compat/kernel_compat.c
+          
+          echo "开始patch strncpy_from_unsafe_user"
+          sed -i '/^#endif$/i\
+          #ifdef CONFIG_KSU\
+          EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);\
+          EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);\
+          #endif' drivers/kernelsu/compat/kernel_compat.c
+          
+          echo "AFTER PATCH:"
+          echo "================================"
+          cat drivers/kernelsu/compat/kernel_compat.c
 
       - name: Re:Kernel
         run: |
