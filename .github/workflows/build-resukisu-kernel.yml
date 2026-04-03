@@ -310,18 +310,18 @@ jobs:
           echo "[+] Patched SELinux."
           
           echo "======== BEFORE PATCH ========"
-          cat drivers/kernelsu/compat/kernel_compat.c
+          tail -20 drivers/kernelsu/compat/kernel_compat.c
           
           echo "开始patch strncpy_from_unsafe_user"
-          sed -i '/^#endif$/i\
-          #ifdef CONFIG_KSU\
-          EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);\
-          EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);\
-          #endif' drivers/kernelsu/compat/kernel_compat.c
+          echo "" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "#ifdef CONFIG_KSU" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "#endif" >> drivers/kernelsu/compat/kernel_compat.c
           
           echo "AFTER PATCH:"
           echo "================================"
-          cat drivers/kernelsu/compat/kernel_compat.c
+          tail -30 drivers/kernelsu/compat/kernel_compat.c
 
       - name: Re:Kernel
         run: |
