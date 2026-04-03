@@ -293,6 +293,14 @@ jobs:
           bash $GITHUB_WORKSPACE/patches/susfs_inline_hook_patches.sh
           echo "[+] executed SuSFS inline hook successfully."
           
+          if grep -q "strncpy_from_unsafe_user" "kernel/trace/bpf_trace.c"; then
+            sed -i 's/strncpy_from_unsafe_user/strncpy_from_unsafe/g' kernel/trace/bpf_trace.c
+          fi
+
+      - name: Necessary Patch
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          
           echo "开始patch syscall hook"
           bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
           echo "[+] executed syscall hook successfully."
@@ -304,10 +312,17 @@ jobs:
           echo "开始backport selinux"
           bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
           echo "[+] Patched SELinux."
+
+      - name: Re:Kernel
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          echo "Executing Re:Kernel shell patches..."
+          bash $GITHUB_WORKSPACE/rekernel/rekernel_patches.sh
           
-          if grep -q "strncpy_from_unsafe_user" "kernel/trace/bpf_trace.c"; then
-            sed -i 's/strncpy_from_unsafe_user/strncpy_from_unsafe/g' kernel/trace/bpf_trace.c
-          fi
+          echo "Applying Re:Kernel extra patch..."
+          patch -p1 < $GITHUB_WORKSPACE/rekernel/rekernel_extra.patch || true
+          
+          echo "Re:Kernel patching completed."
 
       - name: Apply Hide Stuff Patches
         if: env.HIDE_STUFF == 'true'
