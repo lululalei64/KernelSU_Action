@@ -315,8 +315,10 @@ jobs:
           echo "开始patch strncpy_from_unsafe_user"
           echo "" >> drivers/kernelsu/compat/kernel_compat.c
           echo "#ifdef CONFIG_KSU" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "long strncpy_from_unsafe_user(char *dst, const void __user *unsafe_addr, long count) {" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "  return ksu_strncpy_from_user_nofault(dst, unsafe_addr, count); " >> drivers/kernelsu/compat/kernel_compat.c
+          echo "}" >> drivers/kernelsu/compat/kernel_compat.c
           echo "EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);" >> drivers/kernelsu/compat/kernel_compat.c
           echo "#endif" >> drivers/kernelsu/compat/kernel_compat.c
           
           echo "AFTER PATCH:"
