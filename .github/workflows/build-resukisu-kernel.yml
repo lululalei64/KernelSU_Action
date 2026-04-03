@@ -319,6 +319,7 @@ jobs:
           echo "  return ksu_strncpy_from_user_nofault(dst, unsafe_addr, count); " >> drivers/kernelsu/compat/kernel_compat.c
           echo "}" >> drivers/kernelsu/compat/kernel_compat.c
           echo "EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);" >> drivers/kernelsu/compat/kernel_compat.c
+          echo "EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);" >> drivers/kernelsu/compat/kernel_compat.c
           echo "#endif" >> drivers/kernelsu/compat/kernel_compat.c
           
           echo "AFTER PATCH:"
