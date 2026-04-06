@@ -327,6 +327,7 @@ jobs:
           tail -30 drivers/kernelsu/compat/kernel_compat.c
 
       - name: Re:Kernel
+        if: env.REKERNEL_ENABLE == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           echo "Executing Re:Kernel shell patches..."
