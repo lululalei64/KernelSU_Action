@@ -248,7 +248,7 @@ jobs:
             echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> "$CONFIG_FILE"
-            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=n" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
             echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> "$CONFIG_FILE"
@@ -388,6 +388,44 @@ jobs:
             sed -i 's|"/dev/ashmem (deleted)"|"/system/framework/framework-res.apk"|' fs/proc/base.c
             echo "[+] Changed ashmem to framework-res."
           fi
+
+      - name: Check patching
+        run: |
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          
+          patch_files=(
+            fs/exec.c
+            fs/open.c
+            fs/read_write.c
+            fs/stat.c
+            fs/namei.c
+            fs/devpts/inode.c
+            drivers/input/input.c
+            drivers/tty/pty.c
+            security/security.c
+            security/selinux/hooks.c
+            kernel/reboot.c
+            kernel/sys.c
+          )
+          
+          echo "======== START PATCH CHECKING ========"
+          for file in "${patch_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "--------------------------------------"
+              echo "Checking file: $file"
+            
+              if grep -qE "ksu_handle|CONFIG_KSU|susfs_" "$file"; then
+                echo "[MATCH] File $file has been patched. Content snippet:"
+                grep -C 3 -nE "ksu_handle|CONFIG_KSU|susfs_" "$file"
+              else
+                echo "[SKIP] File $file does not contain patch markers or was skipped."
+              fi
+            else
+              echo "[NOT FOUND] $file does not exist in this kernel tree."
+            fi
+          done
+          
+          echo "========= END PATCH CHECKING ========="
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
