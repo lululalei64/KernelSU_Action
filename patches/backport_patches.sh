@@ -99,7 +99,7 @@ for i in "${patch_files[@]}"; do
     # trace/trace_kprobe.c
     kernel/trace/trace_kprobe.c)
         if grep -rq --include="*.c" --include="*.h" "strncpy_from_user_nofault" "drivers/kernelsu/" >/dev/null 2>&1; then
-            sed -i 's/strncpy_from_unsafe/strncpy_from_user_nofault/g' kernel/trace/trace_kprobe.c
+            sed -i 's/strncpy_from_unsafe_user/strncpy_from_user_nofault/g' kernel/trace/trace_kprobe.c
 
             if grep -q "strncpy_from_user_nofault" "kernel/trace/trace_kprobe.c"; then
                 echo "[+] kernel/trace/trace_kprobe.c Patched!"
