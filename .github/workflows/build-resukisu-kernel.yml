@@ -300,8 +300,7 @@ jobs:
           if [ ${{ env.SUSFS_ENABLE }} != true ]; then
             echo "开始patch syscall hook"
             bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
-            echo "[+] executed syscall hook successfully."
-            
+            echo "[+] executed syscall hook successfully." 
           fi
           
           echo "开始backport"
@@ -311,23 +310,6 @@ jobs:
           echo "开始backport selinux"
           bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
           echo "[+] Patched SELinux."
-          
-          echo "======== BEFORE PATCH ========"
-          tail -20 drivers/kernelsu/compat/kernel_compat.c
-          
-          echo "开始patch strncpy_from_unsafe_user"
-          echo "" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "#ifdef CONFIG_KSU" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "long strncpy_from_unsafe_user(char *dst, const void __user *unsafe_addr, long count) {" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "  return ksu_strncpy_from_user_nofault(dst, unsafe_addr, count); " >> drivers/kernelsu/compat/kernel_compat.c
-          echo "}" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "EXPORT_SYMBOL_GPL(strncpy_from_unsafe_user);" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "EXPORT_SYMBOL_GPL(ksu_strncpy_from_user_nofault);" >> drivers/kernelsu/compat/kernel_compat.c
-          echo "#endif" >> drivers/kernelsu/compat/kernel_compat.c
-          
-          echo "AFTER PATCH:"
-          echo "================================"
-          tail -30 drivers/kernelsu/compat/kernel_compat.c
 
       - name: Re:Kernel
         if: env.REKERNEL_ENABLE == 'true'
@@ -396,39 +378,12 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
-          patch_files=(
-            fs/exec.c
-            fs/open.c
-            fs/read_write.c
-            fs/stat.c
-            fs/namei.c
-            fs/devpts/inode.c
-            drivers/input/input.c
-            drivers/tty/pty.c
-            security/security.c
-            security/selinux/hooks.c
-            kernel/reboot.c
-            kernel/sys.c
-          )
+          echo "======== trace_kprobe.c ========"
+          cat kernel/trace/trace_kprobe.c
           
-          echo "======== START PATCH CHECKING ========"
-          for file in "${patch_files[@]}"; do
-            if [ -f "$file" ]; then
-              echo "--------------------------------------"
-              echo "Checking file: $file"
-            
-              if grep -qE "ksu_handle|CONFIG_KSU|susfs_" "$file"; then
-                echo "[MATCH] File $file has been patched. Content snippet:"
-                grep -C 3 -nE "ksu_handle|CONFIG_KSU|susfs_" "$file"
-              else
-                echo "[SKIP] File $file does not contain patch markers or was skipped."
-              fi
-            else
-              echo "[NOT FOUND] $file does not exist in this kernel tree."
-            fi
-          done
+          echo "======== kernel/sys.c ========"
+          cat kernel/sys.c
           
-          echo "========= END PATCH CHECKING ========="
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
