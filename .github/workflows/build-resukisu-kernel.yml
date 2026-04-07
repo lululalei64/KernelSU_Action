@@ -228,6 +228,7 @@ jobs:
           echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
           echo "# CONFIG_KPROBES is not set" >> "$CONFIG_FILE"
           echo "CONFIG_KSU_MANUAL_SU=y" >> "$CONFIG_FILE"
+          echo "CONFIG_HAVE_SYSCALL_TRACEPOINTS=y" >> "$CONFIG_FILE"
           
           if [ ${{ env.ENABLE_KPM }} == true ]; then
             echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
@@ -379,11 +380,7 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
           echo "======== trace_kprobe.c ========"
-          cat kernel/trace/trace_kprobe.c
-          
-          echo "======== kernel/sys.c ========"
-          cat kernel/sys.c
-          
+          cat fs/read_write.c
 
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
