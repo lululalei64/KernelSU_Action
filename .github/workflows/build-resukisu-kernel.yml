@@ -302,14 +302,15 @@ jobs:
             bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
             echo "[+] executed syscall hook successfully."
             
-            echo "开始backport"
-            bash $GITHUB_WORKSPACE/patches/backport_patches.sh
-            echo "[+] executed backport patch successfully."
-            
-            echo "开始backport selinux"
-            bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
-            echo "[+] Patched SELinux."
           fi
+          
+          echo "开始backport"
+          bash $GITHUB_WORKSPACE/patches/backport_patches.sh
+          echo "[+] executed backport patch successfully."
+        
+          echo "开始backport selinux"
+          bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
+          echo "[+] Patched SELinux."
           
           echo "======== BEFORE PATCH ========"
           tail -20 drivers/kernelsu/compat/kernel_compat.c
