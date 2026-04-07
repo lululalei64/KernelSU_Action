@@ -7,6 +7,7 @@ patch_files=(
     fs/namespace.c
     fs/internal.h
     kernel/trace/trace_kprobe.c
+    kernel/trace/bpf_trace.c
     mm/maccess.c
     include/linux/uaccess.h
     include/linux/seccomp.h
@@ -106,6 +107,25 @@ for i in "${patch_files[@]}"; do
                 echo "[+] Count: $(grep -c "strncpy_from_user_nofault" "kernel/trace/trace_kprobe.c")"
             else
                 echo "[-] kernel/trace/trace_kprobe.c patch failed for unknown reasons, please provide feedback in time."
+            fi
+        else
+            echo "[-] KernelSU have no strncpy_from_user_nofault, Skipped."
+        fi
+
+        echo "======================================"
+        ;;
+
+    # kernel/ changes
+    # trace/bpf_trace.c
+    kernel/trace/bpf_trace.c)
+        if grep -rq --include="*.c" --include="*.h" "strncpy_from_user_nofault" "drivers/kernelsu/" >/dev/null 2>&1; then
+            sed -i 's/strncpy_from_unsafe_user/strncpy_from_user_nofault/g' kernel/trace/bpf_trace.c
+
+            if grep -q "strncpy_from_user_nofault" "kernel/trace/bpf_trace.c"; then
+                echo "[+] kernel/trace/bpf_trace.c Patched!"
+                echo "[+] Count: $(grep -c "strncpy_from_user_nofault" "kernel/trace/bpf_trace.c")"
+            else
+                echo "[-] kernel/trace/bpf_trace.c patch failed for unknown reasons, please provide feedback in time."
             fi
         else
             echo "[-] KernelSU have no strncpy_from_user_nofault, Skipped."
