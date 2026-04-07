@@ -293,21 +293,23 @@ jobs:
           bash $GITHUB_WORKSPACE/patches/susfs_inline_hook_patches.sh
           echo "[+] executed SuSFS inline hook successfully."
 
-      - name: Necessary Patch
+      - name: Optional Patch
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           
-          echo "开始patch syscall hook"
-          bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
-          echo "[+] executed syscall hook successfully."
-          
-          echo "开始backport"
-          bash $GITHUB_WORKSPACE/patches/backport_patches.sh
-          echo "[+] executed backport patch successfully."
-          
-          echo "开始backport selinux"
-          bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
-          echo "[+] Patched SELinux."
+          if [ ${{ env.SUSFS_ENABLE }} != true ]; then
+            echo "开始patch syscall hook"
+            bash $GITHUB_WORKSPACE/patches/syscall_hook_patches.sh
+            echo "[+] executed syscall hook successfully."
+            
+            echo "开始backport"
+            bash $GITHUB_WORKSPACE/patches/backport_patches.sh
+            echo "[+] executed backport patch successfully."
+            
+            echo "开始backport selinux"
+            bash $GITHUB_WORKSPACE/patches/backport_selinux_patches.sh
+            echo "[+] Patched SELinux."
+          fi
           
           echo "======== BEFORE PATCH ========"
           tail -20 drivers/kernelsu/compat/kernel_compat.c
