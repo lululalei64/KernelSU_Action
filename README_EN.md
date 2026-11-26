@@ -1,200 +1,185 @@
+[中文](README.md) | **English**
+
 # KernelSU Action
 
-This action is for Non-GKI Kernels and has some universality and requires knowledge of the kernel and Android.
+A GitHub Actions workflow that integrates KernelSU (and its forks), SUSFS and the common kernel patches into an Android kernel, and produces a flashable AnyKernel3 package.
 
-## Warning :warning::warning::warning:
+Assumes some familiarity with Android kernels.
 
-If you are not the author of the Kernel, and are using someone else's labor to build KernelSU, please use it for personal use only and do not share it with others. This is to show respect for the author's labor achievements.
+## Warning :warning:
 
-## Supported Kernel Versions
+If you are not the kernel author, please keep KernelSU builds made from someone else's work to yourself rather than redistributing them. It is a matter of respecting their effort.
 
-- `5.4`
-- `4.19`
-- `4.14`
-- `4.9`
+## Supported kernels
 
-## Usage
+| Kernel | Status |
+| --- | --- |
+| `4.9` `4.14` `4.19` `5.4` | Non-GKI, fully supported |
+| `5.10` `5.15` `6.1` `6.6` `6.12` | GKI source trees, built with `make` |
 
-> All variables in the `config.env` file are only checked for `true`.
+> This builds a **source-integrated (built-in)** kernel. If all you want is the GKI loadable module (`kernelsu.ko`), use upstream's DDK flow instead.
 
-> Once the compilation is successful, AnyKernel3 will be uploaded in the `Action` and the device check has been disabled. Please flash it in TWRP.
+## Quick start
 
-Fork this repository to your storage account and edit the `config.env` file with the following content. Afterward, click `Star` or `Action`. On the left side, you can see the `Build Kernel` option. Click on it, and you will find the `Run workflows` option above the dialog. Click on it to start the build.
+1. Fork this repository.
+2. Edit [`config.env`](config.env) — at minimum `KERNEL_SOURCE`, `KERNEL_SOURCE_BRANCH`, `KERNEL_CONFIG` and `KERNEL_IMAGE_NAME`.
+3. Go to `Actions` → `Build Kernel` → `Run workflow`.
+4. Pick your KernelSU variant, whether to enable SUSFS, and so on, then run it.
+5. Download the AnyKernel3 artifact and flash it from a custom recovery.
 
-### Kernel Source
+The dropdowns all default to `config`, meaning "use whatever the config file says". They **override** the matching key in `config.env` only when you actively change them, so day-to-day tweaking needs no commits — and simply hitting Run always builds exactly what your profile describes, rather than silently switching off a feature you enabled because some checkbox defaulted to off.
 
-Change this to your Kernel repository address.
+To keep one profile per device, copy `config.env` to `config/<device>.env` and pass that path as `Config file to build`.
 
-For example - https://github.com/Diva-Room/Miku_kernel_xiaomi_wayne
+## Supported KernelSU variants
 
-### Kernel Source Branch
+Selected with `KSU_VARIANT`:
 
-Change this to your Kernel branch.
+| Value | Project | Notes |
+| --- | --- | --- |
+| `none` | — | No root solution, plain kernel build |
+| `kernelsu` | [tiann/KernelSU](https://github.com/tiann/KernelSU) | The original. **Dropped non-GKI support at v1.0**, so older kernels are pinned to `v0.9.5` automatically |
+| `kernelsu-next` | [KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next) | Branches are `dev` (default), `stable`, `legacy`. Use `legacy` for older kernels |
+| `sukisu-ultra` | [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) | `main` is the modular v4 tree (supports KPM); `builtin` is the source-integrated tree and the **only ref that ships SUSFS itself** |
+| `resukisu` | [ReSukiSU](https://github.com/ReSukiSU/ReSukiSU) | A re-fork of SukiSU-Ultra aimed at legacy/non-GKI kernels, with multi-manager support |
+| `rsuntk` | [rsuntk/KernelSU](https://github.com/rsuntk/KernelSU) | Also known as RKSU |
+| `backslashxx` | [backslashxx/KernelSU](https://github.com/backslashxx/KernelSU) | Manual-hook oriented |
 
-For example - TDA
+`KSU_REF` takes a branch, tag or commit. **Leave it blank** to let the action pick a sensible ref for your kernel version.
 
-### Kernel Config
+> **Why the ref is validated**
+>
+> Every variant's `setup.sh` ends its checkout with
+> `git checkout "$1" || echo "[-] Checkout default branch"`.
+> A ref that does not exist therefore **does not fail** — it quietly leaves you
+> on the default branch. Following SukiSU-Ultra's own (stale) docs and passing
+> `susfs-main`, a branch that does not exist, gets you a "successful" build
+> whose kernel has no SUSFS in it at all.
+> This action validates the ref **before** invoking `setup.sh`, and fails with
+> the list of branches that do exist.
 
-Change this to your kernel configuration file name.
+## SUSFS
 
-For example: `vendor/wayne_defconfig`
+Set `ENABLE_SUSFS=true`. Patches come from [susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu); the branch is chosen from your kernel version:
 
-### Arch
+| Kernel | SUSFS branch |
+| --- | --- |
+| 4.9 / 4.14 / 4.19 / 5.4 | `kernel-<version>` |
+| 5.10 | `gki-android12-5.10` |
+| 5.15 | `gki-android13-5.15` |
+| 6.1 | `gki-android14-6.1` |
+| 6.6 | `gki-android15-6.6` |
+| 6.12 | `gki-android16-6.12` |
 
-For example: arm64
+Override with `SUSFS_BRANCH` when the guess is wrong (for instance a 5.10 tree that is actually android13-based).
 
-### Kernel Image Name
+The sequence is: copy `fs/susfs.c` and `include/linux/susfs*.h` → apply the kernel-side `50_add_susfs_in_*.patch` → apply the KernelSU-side `10_enable_susfs_for_ksu.patch`. That last step is **skipped automatically** when the chosen variant already bundles SUSFS (for example SukiSU-Ultra's `builtin`).
 
-Change this to the kernel binary that needs to be flashed, generally consistent with `BOARD_KERNEL_IMAGE_NAME` in your AOSP device tree.
+The set of `CONFIG_KSU_SUSFS_*` options is read out of the Kconfig that was actually patched in rather than hardcoded, because it differs by branch: the GKI branches ship SUSFS v2.x (which has `SUS_MAP` and has dropped the `AUTO_ADD_*` knobs) while the non-GKI branches are still on v1.5.5 (which is the exact opposite).
 
-For example: `Image.gz-dtb`
+> **Known rough edge**: susfs4ksu's non-GKI branches have not been updated since early 2025 and still target KernelSU's old flat source layout. Most forks have since restructured into a modular `kernel/` tree, so the KernelSU-side patch can fail for "old kernel + modern fork + SUSFS". The simplest fix is `KSU_VARIANT=sukisu-ultra` with `KSU_REF=builtin`, which bundles SUSFS and does not need that patch. The build prints this advice when it hits the case.
 
-Common names include `Image`, `Image.gz`.
+## path_umount
 
-### Clang
+`path_umount()` only arrived in Linux 5.9. KernelSU uses it to unmount its own mounts before an app checks for root, so older kernels need it backported or module unmounting silently does nothing.
 
-#### Use custom clang
+Set `ENABLE_PATH_UMOUNT=true`. The code is upstream's, inserted into `fs/namespace.c` after `do_umount()`. It is skipped automatically on 5.9+ and on trees that already have the function.
 
-You can use a non-official clang such as [proton-clang](https://github.com/kdrag0n/proton-clang).
+## Other patches
 
-#### Custom Clang Source
+| Option | Effect |
+| --- | --- |
+| `ENABLE_HIDE_STUFF` | Extra removal of KernelSU traces |
+| `ENABLE_KPM` | SukiSU-Ultra's Kernel Patch Module support; runs `patch_linux` against the built Image. `sukisu-ultra` + `arm64` only |
+| `KSU_HOOK_MODE` | `auto` (kprobes on 5.10+, manual below) / `kprobes` / `manual` / `tracepoint` / `syscall` / `none` |
 
-> Fill in a link that includes `.git` if it is a git repository.
+On older kernels, unreliable kprobes is the usual reason KernelSU installs but `su` does nothing — use `manual` there.
 
-Git repository or direct chain of compressed zip files is supported.
+## Toolchains
 
-#### Custom cmds
+The AOSP prebuilt clang repository has a trap: every `kernel-build` branch lists **all** version directories, but only one or two actually contain a toolchain. The rest are empty placeholders — and an empty directory still produces a valid tarball that downloads with HTTP 200. So a wrong version does not 404; it fails forty minutes later with `clang: not found`.
 
-If you're using custom clang, you should be able to modify these settings on your own. :)
+Verified working pairs (2026-07):
 
-#### Clang Branch
-
-Due to [#23](https://github.com/xiaoleGun/KernelSU_Action/issues/23), we provide an option to customize the Google main branch. The main ones include:
-| Clang Branch |
-| ------------ |
-| master |
-| master-kernel-build-2021 |
-| master-kernel-build-2022 |
-
-Or other branches, please search for them according to your own needs at https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86.
-
-#### Clang Version
-
-Enter the Clang version to use.
-
-| Clang Version | Corresponding Android Version | AOSP-Clang Version |
-| ------------- | ----------------------------- | ------------------ |
-| 12.0.5        | Android S                     | r416183b           |
-| 14.0.6        | Android T                     | r450784d           |
-| 14.0.7        |                               | r450784e           |
-| 15.0.1        |                               | r458507            |
-| 17.0.1        |                               | r487747b           |
-| 17.0.2        | Android U                     | r487747c           |
-
-Generally, Clang12 can compile most of the 4.14 and above kernels. My MI 6X 4.19 uses r450784d.
-
-### GCC
-
-#### Enable GCC 64
-
-Enable GCC 64C cross-compiler.
-
-#### Enable GCC 32
-
-Enable GCC 32C cross-compiler.
-
-### Extra cmds
-
-Some kernels require additional compilation commands to compile correctly. Generally, no other commands are needed, so please search for information about your kernel. Please separate the command and the command with a space.
-
-For example: `LLVM=1 LLVM_IAS=1`
-
-### Disable LTO
-
-LTO is used to optimize the kernel but sometimes causes errors.
-
-### Enable KernelSU
-
-Enable KernelSU for troubleshooting kernel failures or compiling the kernel separately.
-
-#### KernelSU Branch or Tag
-
-[KernelSU 1.0 no longer supports non-GKI kernels](https://github.com/tiann/KernelSU/issues/1705). The last supported version is [v0.9.5](https://github.com/tiann/KernelSU/tree/v0.9.5), please make sure to use the correct branch.
-
-Select the branch or tag of KernelSU:
-
-- ~~main branch (development version): `KERNELSU_TAG=main`~~
-- Latest TAG (stable version): `KERNELSU_TAG=v0.9.5`
-- Specify the TAG (such as `v0.5.2`): `KERNELSU_TAG=v0.5.2`
-
-#### KernelSU Manager signature size and hash
-
-Customize the size and hash values of the KernelSU manager signature, if you don't need to customize the manager then please leave them empty or fill in the official default values:
-
-`KSU_EXPECTED_SIZE=0x033b`
-
-`KSU_EXPECTED_HASH=c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6`
-
-You can type `ksud debug get-sign <apk_path>` to get the size and hash of the apk signature.
-
-### Add Kprobes Config
-
-Inject parameters into the defconfig automatically.
-
-### Add overlayfs Config
-
-This parameter provides support for the KernelSU module and system partition read and write. Inject parameters into Defconfig automatically.
-
-### Apply KernelSU Patch
-
-If kprobe does not work in your kernel (may be an upstream or kernel bug below 4.8), then you can try enabling this parameter
-
-Automatically modify kernel source code to support KernelSU  
-See also: [Intergrate for non-GKI devices](https://kernelsu.org/guide/how-to-integrate-for-non-gki.html#manually-modify-the-kernel-source)
-
-### Remove unused packages
-
-To clean unnecessary packages and free up more disk space.If you need these packages, please disable this option.
-
-### AnyKernel3
-
-#### Use custom AnyKernel3
-
-Can use custom AnyKernel3
-
-#### Custom AnyKernel3 Source
-
-> If it is a git repository, please fill in the link containing `.git`
-
-Supports direct links to git repositories or zip compressed packages
-
-#### AnyKernel3 Branch
-
-Customize the warehouse branch of AnyKernel3
-
-### Enable ccache
-
-Enable the cache to make the second kernel compile faster. It can reduce the time by at least 2/5.
-
-### Need DTBO
-
-Upload DTBO. Some devices require it.
-
-### Build Boot IMG
-
-> Added from previous workflows, view historical commits
-
-Build boot.img, and you need to provide a `Source boot image`.
-
-### Source Boot Image
-
-As the name suggests, it provides a boot image source system that can boot normally and requires a direct chain, preferably from the same kernel source and AOSP device tree as your current system. Ramdisk contains the partition table and init, without which the compiled image will not boot up properly.
-
-For example: https://raw.githubusercontent.com/xiaoleGun/KernelSU_action/main/boot/boot-wayne-from-Miku-UI-latest.img
-
-## Thanks
+| `CLANG_BRANCH` | `CLANG_VERSION` |
+| --- | --- |
+| `main-kernel` | `r596125` (newest) |
+| `main-kernel-2026` | `r584948c` |
+| `main-kernel-2025` | `r547379` |
+| `main-kernel-build-2024` | `r510928` |
+| `master-kernel-build-2022` | `r450784e` |
+
+Newer clang often fails to build 4.x trees; use `r450784e` for `4.9`–`4.19` and `r547379` or newer for `5.10+`. The build verifies that `bin/clang` really exists after extraction and warns about pairs outside this table.
+
+Third-party toolchains work too: `USE_CUSTOM_CLANG=true` plus `CUSTOM_CLANG_SOURCE` (a git repo, or a direct zip/tar link).
+
+## Configuration
+
+Every key is documented inline in [`config.env`](config.env). The ones people touch most:
+
+| Option | Meaning |
+| --- | --- |
+| `KERNEL_IMAGE_NAME` | The kernel binary to flash; matches `BOARD_KERNEL_IMAGE_NAME` in your device tree. Usually `Image.gz-dtb`, `Image.gz` or `Image` |
+| `EXTRA_CMDS` / `CUSTOM_CMDS` | Appended to every `make`; values may contain `=` |
+| `USE_LLVM` | Full LLVM build (`LLVM=1 LLVM_IAS=1`), suitable for 5.10+ |
+| `ADD_OVERLAYFS_CONFIG` | Needed for KernelSU modules and system read-write |
+| `DISABLE_LTO` | LTO optimises the kernel but sometimes breaks the build |
+| `DISABLE_CC_WERROR` | Fixes kernels that turn KernelSU's warnings into errors |
+| `EXTRA_DEFCONFIG` | Arbitrary extra defconfig lines, e.g. `CONFIG_TMPFS_XATTR=y` |
+| `BUILD_BOOT_IMG` + `SOURCE_BOOT_IMAGE` | Repack a boot.img; needs a direct link to a bootable image from the same device and ROM |
+| `KSU_EXPECTED_SIZE` / `KSU_EXPECTED_HASH` | Custom manager signature, from `ksud debug get-sign <apk>` |
+
+## Backwards compatibility
+
+Existing `config.env` files keep working untouched. These keys are translated automatically, with a notice in the log:
+
+| Old key | New key |
+| --- | --- |
+| `ENABLE_KERNELSU=true` | `KSU_VARIANT=kernelsu` |
+| `KERNELSU_TAG` | `KSU_REF` |
+| `APPLY_KSU_PATCH=true` | `KSU_HOOK_MODE=manual` |
+| `DISABLE-LTO` | `DISABLE_LTO` |
+
+## Layout
+
+```
+.github/workflows/
+  build-kernel.yml   build entry point (workflow_dispatch + workflow_call)
+  ci.yml             shellcheck / actionlint / config validation / upstream link check
+scripts/
+  lib.sh             logging, retry, Kconfig read-write, patching, ref validation
+  config.sh          config resolution, input overrides, validation
+  toolchain.sh       clang / gcc / mkbootimg
+  source.sh          kernel source checkout
+  kernelsu.sh        variant registry and installation
+  patches.sh         SUSFS / path_umount / hide_stuff / hooks / KPM
+  build.sh           defconfig injection and compilation
+  package.sh         AnyKernel3 / boot.img
+patches/
+  legacy_ksu_hooks.sh  the original sed-based hook script (fallback for manual mode)
+```
+
+`build-kernel.yml` is also reusable via `workflow_call`, so you can keep a very short per-device workflow.
+
+## Troubleshooting
+
+| Symptom | Cause |
+| --- | --- |
+| `clang: not found`, or an empty toolchain directory | Invalid `CLANG_BRANCH` / `CLANG_VERSION` pair — see the table above |
+| `ref '...' does not exist` | `KSU_REF` names a branch that is not there; the log lists the real ones |
+| SUSFS kernel patch fails to apply | `SUSFS_BRANCH` does not match the kernel, or the tree was already modified |
+| KernelSU installs but `su` does nothing | Unreliable kprobes on an old kernel — set `KSU_HOOK_MODE=manual` |
+| Module mounts cannot be unmounted | Kernels below 5.9 need `ENABLE_PATH_UMOUNT=true` |
+| defconfig not found | `KERNEL_CONFIG` is wrong; the log lists the available defconfigs |
+
+## Credits
 
 - [AnyKernel3](https://github.com/osm0sis/AnyKernel3)
 - [AOSP](https://android.googlesource.com)
 - [KernelSU](https://github.com/tiann/KernelSU)
+- [KernelSU-Next](https://github.com/KernelSU-Next/KernelSU-Next)
+- [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)
+- [ReSukiSU](https://github.com/ReSukiSU/ReSukiSU)
+- [susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu)
+- [SukiSU_patch](https://github.com/ShirkNeko/SukiSU_patch)
 - [xiaoxindada](https://github.com/xiaoxindada)
